@@ -1,0 +1,17 @@
+[Unit]
+Description=SharePoint Document Classification Automation
+After=network.target
+Wants=network.target
+
+[Service]
+Type=simple
+WorkingDirectory=/home/azureuser/rag_project
+Environment=PATH=/home/azureuser/miniconda3/envs/rag/bin:/home/azureuser/miniconda3/bin:/usr/local/bin:/usr/bin:/bin
+ExecStart=/home/azureuser/miniconda3/envs/rag/bin/python /home/azureuser/rag_project/sharepoint_automation.py
+Restart=always
+RestartSec=30
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=default.target

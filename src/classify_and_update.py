@@ -1,5 +1,8 @@
 import os
 import uuid
+import sys
+sys.path.append(os.path.join(os.path.dirname(__file__), '..', 'scripts', 'utils'))
+sys.path.append(os.path.join(os.path.dirname(__file__), '..', 'tests', 'unit'))
 from sentence_transformers import SentenceTransformer
 from qdrant_client import QdrantClient
 from qdrant_client.http.models import VectorParams, Distance
