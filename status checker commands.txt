@@ -1,0 +1,15 @@
+Mistral API Server
+
+status: sudo systemctl status mistral-api
+log: journalctl -u mistral-api.service -f
+
+Cloudflare Tunnel
+
+status: sudo systemctl status cloudflared
+log: journalctl -u cloudflared.service -f
+
+Qdrant Vector Database
+
+status: sudo systemctl status qdrant
+log: journalctl -u qdrant.service -f
+

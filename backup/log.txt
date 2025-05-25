@@ -1,0 +1,109 @@
+May 25 20:33:34 Arandia-GPUSpot systemd[1]: mistral-api.service: Failed with result 'exit-code'.
+May 25 20:33:44 Arandia-GPUSpot systemd[1]: mistral-api.service: Scheduled restart job, restart counter is at 19.
+May 25 20:33:44 Arandia-GPUSpot systemd[1]: Stopped Mistral-7B-Instruct-v0.3 OpenAI-API Server.
+May 25 20:33:44 Arandia-GPUSpot systemd[1]: Started Mistral-7B-Instruct-v0.3 OpenAI-API Server.
+May 25 20:33:44 Arandia-GPUSpot start_mistral.sh[5349]: Traceback (most recent call last):
+May 25 20:33:44 Arandia-GPUSpot start_mistral.sh[5349]:   File "<string>", line 1, in <module>
+May 25 20:33:44 Arandia-GPUSpot start_mistral.sh[5349]:   File "/home/azureuser/rag_project/mistral_api_server.py", line 55
+May 25 20:33:44 Arandia-GPUSpot start_mistral.sh[5349]:     global model, tokenizer
+May 25 20:33:44 Arandia-GPUSpot start_mistral.sh[5349]:     ^^^^^^^^^^^^^^^^^^^^^^^
+May 25 20:33:44 Arandia-GPUSpot start_mistral.sh[5349]: SyntaxError: name 'model' is used prior to global declaration
+May 25 20:33:44 Arandia-GPUSpot start_mistral.sh[5344]: Traceback (most recent call last):
+May 25 20:33:44 Arandia-GPUSpot start_mistral.sh[5344]:   File "/home/azureuser/miniconda3/envs/rag/bin/uvicorn", line 8, in <module>
+May 25 20:33:44 Arandia-GPUSpot start_mistral.sh[5344]:     sys.exit(main())
+May 25 20:33:44 Arandia-GPUSpot start_mistral.sh[5344]:   File "/home/azureuser/miniconda3/envs/rag/lib/python3.10/site-packages/click/core.py", line 1442, in __call__
+May 25 20:33:44 Arandia-GPUSpot start_mistral.sh[5344]:     return self.main(*args, **kwargs)
+May 25 20:33:44 Arandia-GPUSpot start_mistral.sh[5344]:   File "/home/azureuser/miniconda3/envs/rag/lib/python3.10/site-packages/click/core.py", line 1363, in main
+May 25 20:33:44 Arandia-GPUSpot start_mistral.sh[5344]:     rv = self.invoke(ctx)
+May 25 20:33:44 Arandia-GPUSpot start_mistral.sh[5344]:   File "/home/azureuser/miniconda3/envs/rag/lib/python3.10/site-packages/click/core.py", line 1226, in invoke
+May 25 20:33:44 Arandia-GPUSpot start_mistral.sh[5344]:     return ctx.invoke(self.callback, **ctx.params)
+May 25 20:33:44 Arandia-GPUSpot start_mistral.sh[5344]:   File "/home/azureuser/miniconda3/envs/rag/lib/python3.10/site-packages/click/core.py", line 794, in invoke
+May 25 20:33:44 Arandia-GPUSpot start_mistral.sh[5344]:     return callback(*args, **kwargs)
+May 25 20:33:44 Arandia-GPUSpot start_mistral.sh[5344]:   File "/home/azureuser/miniconda3/envs/rag/lib/python3.10/site-packages/uvicorn/main.py", line 413, in main
+May 25 20:33:44 Arandia-GPUSpot start_mistral.sh[5344]:     run(
+May 25 20:33:44 Arandia-GPUSpot start_mistral.sh[5344]:   File "/home/azureuser/miniconda3/envs/rag/lib/python3.10/site-packages/uvicorn/main.py", line 580, in run
+May 25 20:33:44 Arandia-GPUSpot start_mistral.sh[5344]:     server.run()
+May 25 20:33:44 Arandia-GPUSpot start_mistral.sh[5344]:   File "/home/azureuser/miniconda3/envs/rag/lib/python3.10/site-packages/uvicorn/server.py", line 66, in run
+May 25 20:33:44 Arandia-GPUSpot start_mistral.sh[5344]:     return asyncio.run(self.serve(sockets=sockets))
+May 25 20:33:44 Arandia-GPUSpot start_mistral.sh[5344]:   File "/home/azureuser/miniconda3/envs/rag/lib/python3.10/asyncio/runners.py", line 44, in run
+May 25 20:33:44 Arandia-GPUSpot start_mistral.sh[5344]:     return loop.run_until_complete(main)
+May 25 20:33:44 Arandia-GPUSpot start_mistral.sh[5344]:   File "/home/azureuser/miniconda3/envs/rag/lib/python3.10/asyncio/base_events.py", line 649, in run_until_complete
+May 25 20:33:44 Arandia-GPUSpot start_mistral.sh[5344]:     return future.result()
+May 25 20:33:44 Arandia-GPUSpot start_mistral.sh[5344]:   File "/home/azureuser/miniconda3/envs/rag/lib/python3.10/site-packages/uvicorn/server.py", line 70, in serve
+May 25 20:33:44 Arandia-GPUSpot start_mistral.sh[5344]:     await self._serve(sockets)
+May 25 20:33:44 Arandia-GPUSpot start_mistral.sh[5344]:   File "/home/azureuser/miniconda3/envs/rag/lib/python3.10/site-packages/uvicorn/server.py", line 77, in _serve
+May 25 20:33:44 Arandia-GPUSpot start_mistral.sh[5344]:     config.load()
+May 25 20:33:44 Arandia-GPUSpot start_mistral.sh[5344]:   File "/home/azureuser/miniconda3/envs/rag/lib/python3.10/site-packages/uvicorn/config.py", line 435, in load
+May 25 20:33:44 Arandia-GPUSpot start_mistral.sh[5344]:     self.loaded_app = import_from_string(self.app)
+May 25 20:33:44 Arandia-GPUSpot start_mistral.sh[5344]:   File "/home/azureuser/miniconda3/envs/rag/lib/python3.10/site-packages/uvicorn/importer.py", line 19, in import_from_string
+May 25 20:33:44 Arandia-GPUSpot start_mistral.sh[5344]:     module = importlib.import_module(module_str)
+May 25 20:33:44 Arandia-GPUSpot start_mistral.sh[5344]:   File "/home/azureuser/miniconda3/envs/rag/lib/python3.10/importlib/__init__.py", line 126, in import_module
+May 25 20:33:44 Arandia-GPUSpot start_mistral.sh[5344]:     return _bootstrap._gcd_import(name[level:], package, level)
+May 25 20:33:44 Arandia-GPUSpot start_mistral.sh[5344]:   File "<frozen importlib._bootstrap>", line 1050, in _gcd_import
+May 25 20:33:44 Arandia-GPUSpot start_mistral.sh[5344]:   File "<frozen importlib._bootstrap>", line 1027, in _find_and_load
+May 25 20:33:44 Arandia-GPUSpot start_mistral.sh[5344]:   File "<frozen importlib._bootstrap>", line 1006, in _find_and_load_unlocked
+May 25 20:33:44 Arandia-GPUSpot start_mistral.sh[5344]:   File "<frozen importlib._bootstrap>", line 688, in _load_unlocked
+May 25 20:33:44 Arandia-GPUSpot start_mistral.sh[5344]:   File "<frozen importlib._bootstrap_external>", line 879, in exec_module
+May 25 20:33:44 Arandia-GPUSpot start_mistral.sh[5344]:   File "<frozen importlib._bootstrap_external>", line 1017, in get_code
+May 25 20:33:44 Arandia-GPUSpot start_mistral.sh[5344]:   File "<frozen importlib._bootstrap_external>", line 947, in source_to_code
+May 25 20:33:44 Arandia-GPUSpot start_mistral.sh[5344]:   File "<frozen importlib._bootstrap>", line 241, in _call_with_frames_removed
+May 25 20:33:44 Arandia-GPUSpot start_mistral.sh[5344]:   File "/home/azureuser/rag_project/mistral_api_server.py", line 55
+May 25 20:33:44 Arandia-GPUSpot start_mistral.sh[5344]:     global model, tokenizer
+May 25 20:33:44 Arandia-GPUSpot start_mistral.sh[5344]:     ^^^^^^^^^^^^^^^^^^^^^^^
+May 25 20:33:44 Arandia-GPUSpot start_mistral.sh[5344]: SyntaxError: name 'model' is used prior to global declaration
+May 25 20:33:44 Arandia-GPUSpot systemd[1]: mistral-api.service: Main process exited, code=exited, status=1/FAILURE
+May 25 20:33:44 Arandia-GPUSpot systemd[1]: mistral-api.service: Failed with result 'exit-code'.
+May 25 20:33:54 Arandia-GPUSpot systemd[1]: mistral-api.service: Scheduled restart job, restart counter is at 20.
+May 25 20:33:54 Arandia-GPUSpot systemd[1]: Stopped Mistral-7B-Instruct-v0.3 OpenAI-API Server.
+May 25 20:33:54 Arandia-GPUSpot systemd[1]: Started Mistral-7B-Instruct-v0.3 OpenAI-API Server.
+May 25 20:33:55 Arandia-GPUSpot start_mistral.sh[5388]: Traceback (most recent call last):
+May 25 20:33:55 Arandia-GPUSpot start_mistral.sh[5388]:   File "<string>", line 1, in <module>
+May 25 20:33:55 Arandia-GPUSpot start_mistral.sh[5388]:   File "/home/azureuser/rag_project/mistral_api_server.py", line 55
+May 25 20:33:55 Arandia-GPUSpot start_mistral.sh[5388]:     global model, tokenizer
+May 25 20:33:55 Arandia-GPUSpot start_mistral.sh[5388]:     ^^^^^^^^^^^^^^^^^^^^^^^
+May 25 20:33:55 Arandia-GPUSpot start_mistral.sh[5388]: SyntaxError: name 'model' is used prior to global declaration
+May 25 20:33:55 Arandia-GPUSpot start_mistral.sh[5383]: Traceback (most recent call last):
+May 25 20:33:55 Arandia-GPUSpot start_mistral.sh[5383]:   File "/home/azureuser/miniconda3/envs/rag/bin/uvicorn", line 8, in <module>
+May 25 20:33:55 Arandia-GPUSpot start_mistral.sh[5383]:     sys.exit(main())
+May 25 20:33:55 Arandia-GPUSpot start_mistral.sh[5383]:   File "/home/azureuser/miniconda3/envs/rag/lib/python3.10/site-packages/click/core.py", line 1442, in __call__
+May 25 20:33:55 Arandia-GPUSpot start_mistral.sh[5383]:     return self.main(*args, **kwargs)
+May 25 20:33:55 Arandia-GPUSpot start_mistral.sh[5383]:   File "/home/azureuser/miniconda3/envs/rag/lib/python3.10/site-packages/click/core.py", line 1363, in main
+May 25 20:33:55 Arandia-GPUSpot start_mistral.sh[5383]:     rv = self.invoke(ctx)
+May 25 20:33:55 Arandia-GPUSpot start_mistral.sh[5383]:   File "/home/azureuser/miniconda3/envs/rag/lib/python3.10/site-packages/click/core.py", line 1226, in invoke
+May 25 20:33:55 Arandia-GPUSpot start_mistral.sh[5383]:     return ctx.invoke(self.callback, **ctx.params)
+May 25 20:33:55 Arandia-GPUSpot start_mistral.sh[5383]:   File "/home/azureuser/miniconda3/envs/rag/lib/python3.10/site-packages/click/core.py", line 794, in invoke
+May 25 20:33:55 Arandia-GPUSpot start_mistral.sh[5383]:     return callback(*args, **kwargs)
+May 25 20:33:55 Arandia-GPUSpot start_mistral.sh[5383]:   File "/home/azureuser/miniconda3/envs/rag/lib/python3.10/site-packages/uvicorn/main.py", line 413, in main
+May 25 20:33:55 Arandia-GPUSpot start_mistral.sh[5383]:     run(
+May 25 20:33:55 Arandia-GPUSpot start_mistral.sh[5383]:   File "/home/azureuser/miniconda3/envs/rag/lib/python3.10/site-packages/uvicorn/main.py", line 580, in run
+May 25 20:33:55 Arandia-GPUSpot start_mistral.sh[5383]:     server.run()
+May 25 20:33:55 Arandia-GPUSpot start_mistral.sh[5383]:   File "/home/azureuser/miniconda3/envs/rag/lib/python3.10/site-packages/uvicorn/server.py", line 66, in run
+May 25 20:33:55 Arandia-GPUSpot start_mistral.sh[5383]:     return asyncio.run(self.serve(sockets=sockets))
+May 25 20:33:55 Arandia-GPUSpot start_mistral.sh[5383]:   File "/home/azureuser/miniconda3/envs/rag/lib/python3.10/asyncio/runners.py", line 44, in run
+May 25 20:33:55 Arandia-GPUSpot start_mistral.sh[5383]:     return loop.run_until_complete(main)
+May 25 20:33:55 Arandia-GPUSpot start_mistral.sh[5383]:   File "/home/azureuser/miniconda3/envs/rag/lib/python3.10/asyncio/base_events.py", line 649, in run_until_complete
+May 25 20:33:55 Arandia-GPUSpot start_mistral.sh[5383]:     return future.result()
+May 25 20:33:55 Arandia-GPUSpot start_mistral.sh[5383]:   File "/home/azureuser/miniconda3/envs/rag/lib/python3.10/site-packages/uvicorn/server.py", line 70, in serve
+May 25 20:33:55 Arandia-GPUSpot start_mistral.sh[5383]:     await self._serve(sockets)
+May 25 20:33:55 Arandia-GPUSpot start_mistral.sh[5383]:   File "/home/azureuser/miniconda3/envs/rag/lib/python3.10/site-packages/uvicorn/server.py", line 77, in _serve
+May 25 20:33:55 Arandia-GPUSpot start_mistral.sh[5383]:     config.load()
+May 25 20:33:55 Arandia-GPUSpot start_mistral.sh[5383]:   File "/home/azureuser/miniconda3/envs/rag/lib/python3.10/site-packages/uvicorn/config.py", line 435, in load
+May 25 20:33:55 Arandia-GPUSpot start_mistral.sh[5383]:     self.loaded_app = import_from_string(self.app)
+May 25 20:33:55 Arandia-GPUSpot start_mistral.sh[5383]:   File "/home/azureuser/miniconda3/envs/rag/lib/python3.10/site-packages/uvicorn/importer.py", line 19, in import_from_string
+May 25 20:33:55 Arandia-GPUSpot start_mistral.sh[5383]:     module = importlib.import_module(module_str)
+May 25 20:33:55 Arandia-GPUSpot start_mistral.sh[5383]:   File "/home/azureuser/miniconda3/envs/rag/lib/python3.10/importlib/__init__.py", line 126, in import_module
+May 25 20:33:55 Arandia-GPUSpot start_mistral.sh[5383]:     return _bootstrap._gcd_import(name[level:], package, level)
+May 25 20:33:55 Arandia-GPUSpot start_mistral.sh[5383]:   File "<frozen importlib._bootstrap>", line 1050, in _gcd_import
+May 25 20:33:55 Arandia-GPUSpot start_mistral.sh[5383]:   File "<frozen importlib._bootstrap>", line 1027, in _find_and_load
+May 25 20:33:55 Arandia-GPUSpot start_mistral.sh[5383]:   File "<frozen importlib._bootstrap>", line 1006, in _find_and_load_unlocked
+May 25 20:33:55 Arandia-GPUSpot start_mistral.sh[5383]:   File "<frozen importlib._bootstrap>", line 688, in _load_unlocked
+May 25 20:33:55 Arandia-GPUSpot start_mistral.sh[5383]:   File "<frozen importlib._bootstrap_external>", line 879, in exec_module
+May 25 20:33:55 Arandia-GPUSpot start_mistral.sh[5383]:   File "<frozen importlib._bootstrap_external>", line 1017, in get_code
+May 25 20:33:55 Arandia-GPUSpot start_mistral.sh[5383]:   File "<frozen importlib._bootstrap_external>", line 947, in source_to_code
+May 25 20:33:55 Arandia-GPUSpot start_mistral.sh[5383]:   File "<frozen importlib._bootstrap>", line 241, in _call_with_frames_removed
+May 25 20:33:55 Arandia-GPUSpot start_mistral.sh[5383]:   File "/home/azureuser/rag_project/mistral_api_server.py", line 55
+May 25 20:33:55 Arandia-GPUSpot start_mistral.sh[5383]:     global model, tokenizer
+May 25 20:33:55 Arandia-GPUSpot start_mistral.sh[5383]:     ^^^^^^^^^^^^^^^^^^^^^^^
+May 25 20:33:55 Arandia-GPUSpot start_mistral.sh[5383]: SyntaxError: name 'model' is used prior to global declaration
+May 25 20:33:55 Arandia-GPUSpot systemd[1]: mistral-api.service: Main process exited, code=exited, status=1/FAILURE
+May 25 20:33:55 Arandia-GPUSpot systemd[1]: mistral-api.service: Failed with result 'exit-code'.
