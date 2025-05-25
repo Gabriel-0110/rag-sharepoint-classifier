@@ -1,0 +1,41 @@
+nohup: ignoring input
+           _                 _    
+  __ _  __| |_ __ __ _ _ __ | |_  
+ / _` |/ _` | '__/ _` | '_ \| __| 
+| (_| | (_| | | | (_| | | | | |_  
+ \__, |\__,_|_|  \__,_|_| |_|\__| 
+    |_|                           
+
+Version: 1.14.0, build: 3617a011
+Access web UI at http://localhost:6333/dashboard
+
+2025-05-22T03:32:41.346050Z  WARN qdrant::settings: Config file not found: config/config    
+2025-05-22T03:32:41.346071Z  WARN qdrant::settings: Config file not found: config/development    
+2025-05-22T03:32:41.346092Z  INFO storage::content_manager::consensus::persistent: Loading raft state from ./storage/raft_state.json    
+2025-05-22T03:32:41.348765Z  INFO qdrant: Distributed mode disabled    
+2025-05-22T03:32:41.348787Z  INFO qdrant: Telemetry reporting enabled, id: 3bb2d410-2c4e-4a1e-8e95-ad8faf0a1966    
+2025-05-22T03:32:41.348809Z  INFO qdrant: Inference service is not configured.    
+2025-05-22T03:32:41.352543Z  WARN qdrant::actix::web_ui: Static content folder for Web UI './static' does not exist    
+2025-05-22T03:32:41.352751Z  INFO qdrant::actix: TLS disabled for REST API    
+2025-05-22T03:32:41.352793Z  INFO qdrant::actix: Qdrant HTTP listening on 6333    
+2025-05-22T03:32:41.352804Z  INFO actix_server::builder: Starting 3 workers
+2025-05-22T03:32:41.352811Z  INFO actix_server::server: Actix runtime found; starting in Actix runtime
+2025-05-22T03:32:41.362675Z  INFO qdrant::tonic: Qdrant gRPC listening on 6334    
+2025-05-22T03:32:41.362696Z  INFO qdrant::tonic: TLS disabled for gRPC API    
+2025-05-22T03:33:02.044949Z  INFO actix_web::middleware::logger: 127.0.0.1 "GET /collections HTTP/1.1" 200 59 "-" "curl/8.13.0" 0.000115    
+2025-05-22T03:33:32.787889Z  INFO actix_web::middleware::logger: 127.0.0.1 "PUT /collections/documents/points?wait=true HTTP/1.1" 404 98 "-" "python-httpx/0.28.1" 0.000538    
+2025-05-22T03:35:56.199196Z  INFO actix_web::middleware::logger: 127.0.0.1 "GET /collections HTTP/1.1" 200 82 "-" "python-httpx/0.28.1" 0.000207    
+2025-05-22T03:35:56.201547Z  INFO storage::content_manager::toc::collection_meta_ops: Creating collection documents    
+2025-05-22T03:35:56.711450Z  INFO actix_web::middleware::logger: 127.0.0.1 "PUT /collections/documents HTTP/1.1" 200 71 "-" "python-httpx/0.28.1" 0.510030    
+2025-05-22T03:35:56.717587Z  INFO actix_web::middleware::logger: 127.0.0.1 "PUT /collections/documents/points?wait=true HTTP/1.1" 200 92 "-" "python-httpx/0.28.1" 0.003040    
+2025-05-22T04:09:32.961911Z  INFO actix_web::middleware::logger: 127.0.0.1 "GET /collections HTTP/1.1" 200 92 "-" "qdrant-client/1.14.2 python/3.10.13" 0.000207    
+2025-05-22T04:09:32.971793Z  INFO actix_web::middleware::logger: 127.0.0.1 "PUT /collections/documents/points?wait=true HTTP/1.1" 200 91 "-" "qdrant-client/1.14.2 python/3.10.13" 0.007168    
+2025-05-22T04:12:48.624689Z  INFO actix_web::middleware::logger: 127.0.0.1 "GET /collections HTTP/1.1" 200 79 "-" "curl/8.13.0" 0.000072    
+2025-05-22T04:15:08.430405Z  INFO actix_web::middleware::logger: 127.0.0.1 "GET /collections HTTP/1.1" 200 79 "-" "curl/7.81.0" 0.000068    
+2025-05-22T04:16:18.252474Z  INFO actix_web::middleware::logger: 127.0.0.1 "GET /collections HTTP/1.1" 200 79 "-" "curl/7.81.0" 0.000069    
+2025-05-22T04:17:03.417131Z  INFO actix_web::middleware::logger: 127.0.0.1 "GET /collections HTTP/1.1" 200 79 "-" "curl/7.81.0" 0.000066    
+2025-05-22T04:19:10.471020Z  INFO actix_web::middleware::logger: 127.0.0.1 "GET /collections HTTP/1.1" 200 79 "-" "curl/7.81.0" 0.000065    
+2025-05-22T04:20:52.843107Z  INFO actix_web::middleware::logger: 127.0.0.1 "GET /collections HTTP/1.1" 200 79 "-" "curl/7.81.0" 0.000068    
+2025-05-22T04:21:30.217714Z  INFO actix_web::middleware::logger: 127.0.0.1 "GET /collections HTTP/1.1" 200 79 "-" "curl/7.81.0" 0.000069    
+2025-05-22T04:24:10.539048Z  INFO actix_web::middleware::logger: 127.0.0.1 "GET /collections HTTP/1.1" 200 79 "-" "curl/7.81.0" 0.000065    
+2025-05-22T04:26:16.385978Z  INFO actix_web::middleware::logger: 127.0.0.1 "GET /collections HTTP/1.1" 200 79 "-" "curl/7.81.0" 0.000069    

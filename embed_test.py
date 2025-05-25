@@ -3,7 +3,7 @@ import re
 import uuid
 from openai import OpenAI
 from docx import Document
-import fitz             # PyMuPDF
+import fitz  # PyMuPDF
 from PIL import Image
 import pytesseract
 from sentence_transformers import SentenceTransformer
@@ -31,10 +31,10 @@ def extract_text(path):
         return pytesseract.image_to_string(Image.open(path))
 
 def classify_with_llm(text: str) -> tuple[str, str]:
-    # configure OpenAI client to use your local server
+    # configure OpenAI-compatible client
     client = OpenAI(
-        api_key="sk-local",
-        base_url="http://localhost:8000/v1"
+        api_key="sk-mistral-local",  # dummy key
+        base_url="http://localhost:8001"  # your FastAPI server
     )
 
     prompt = (
@@ -47,31 +47,30 @@ def classify_with_llm(text: str) -> tuple[str, str]:
         "Document Category: <category>\n"
     )
 
-    resp = client.completions.create(
-        model="local-model",
-        prompt=prompt,
+    resp = client.chat.completions.create(
+        model="mistral-7b-instruct-v0.3",
+        messages=[{"role": "user", "content": prompt}],
         temperature=0.2,
-        max_tokens=200,
-        stop=["</s>"]
+        max_tokens=200
     )
-    result = resp.choices[0].text
+    result = resp.choices[0].message.content
 
-    # pull out the two labels
     type_match = re.search(r"Document Type:\s*(.*)", result)
-    cat_match  = re.search(r"Document Category:\s*(.*)", result)
+    cat_match = re.search(r"Document Category:\s*(.*)", result)
 
     return (
         type_match.group(1).strip() if type_match else "Unknown",
-        cat_match.group(1).strip() if cat_match  else "Unknown"
+        cat_match.group(1).strip() if cat_match else "Unknown"
     )
 
 if __name__ == '__main__':
-    # locate the latest downloaded file
+    # locate the latest file in downloads/
     downloads = os.path.join(os.getcwd(), 'downloads')
     files = [f for f in os.listdir(downloads) if os.path.isfile(os.path.join(downloads, f))]
     if not files:
         print("No files found in downloads/")
         exit()
+
     latest = max(files, key=lambda f: os.path.getctime(os.path.join(downloads, f)))
     path = os.path.join(downloads, latest)
     print(f"Processing {path}")
@@ -82,9 +81,9 @@ if __name__ == '__main__':
     print(f"→ Type: {doc_type} | Category: {doc_cat}")
 
     # embed & upsert to Qdrant
-    embedder = SentenceTransformer('all-MiniLM-L6-v2')
-    qdrant   = QdrantClient(url='http://localhost:6333')
-    vec      = embedder.encode([text])[0]
+    embedder = SentenceTransformer('all-MiniLM-L6-v2', device='cpu')
+    qdrant = QdrantClient(url='http://localhost:6333')
+    vec = embedder.encode([text])[0]
 
     collections = qdrant.get_collections().collections
     existing_names = [col.name for col in collections]
