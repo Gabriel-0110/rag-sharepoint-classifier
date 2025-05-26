@@ -1,0 +1,49 @@
+{
+  "timestamp": "2025-05-26T02:39:32.440711",
+  "gpu_memory": {
+    "used_mb": 3241,
+    "total_mb": 4096,
+    "usage_percent": 79.13,
+    "status": "OK"
+  },
+  "services": {
+    "rag-fastapi.service": {
+      "service": "rag-fastapi.service",
+      "active": true,
+      "status": "OK"
+    },
+    "rag-mistral.service": {
+      "service": "rag-mistral.service",
+      "active": true,
+      "status": "OK"
+    },
+    "rag-sharepoint.service": {
+      "service": "rag-sharepoint.service",
+      "active": true,
+      "status": "OK"
+    }
+  },
+  "api_endpoints": {
+    "fastapi": {
+      "status": "ERROR",
+      "status_code": 404,
+      "response_time_ms": 3.26
+    },
+    "mistral": {
+      "status": "OK",
+      "status_code": 200,
+      "response_time_ms": 2.06
+    }
+  },
+  "classification_pipeline": {
+    "status": "ERROR",
+    "status_code": 404,
+    "error": "{\"detail\":\"Not Found\"}"
+  },
+  "recent_classifications": {
+    "last_classification": "2025-05-26T01:09:44.890278",
+    "minutes_since_last": 89.79,
+    "status": "WARNING"
+  },
+  "overall_status": "ERROR"
+}

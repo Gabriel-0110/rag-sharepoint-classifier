@@ -5,16 +5,36 @@ Monitors SharePoint library and automatically classifies new documents.
 """
 
 import os
+import sys
 import time
 import requests
 from datetime import datetime, timedelta
 from msal import ConfidentialClientApplication
 from dotenv import load_dotenv
-from extract_all import extract_text_from_file
-from embed_test import classify_with_llm
-from update_sharepoint import update_metadata
-from log_classification import log_classification_result
 import json
+import logging
+
+# Add paths for imports
+sys.path.append('/home/azureuser/rag_project/scripts/utils')
+sys.path.append('/home/azureuser/rag_project/enhanced')
+
+try:
+    from extract_all import extract_text_from_file
+    from update_sharepoint import update_metadata
+    from log_classification import log_classification_result
+except ImportError as e:
+    logging.error(f"Import error: {e}")
+    print(f"Import error: {e}")
+
+# Configure logging
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(levelname)s - %(message)s',
+    handlers=[
+        logging.FileHandler('/home/azureuser/rag_project/logs/application/sharepoint_automation.log'),
+        logging.StreamHandler()
+    ]
+)
 
 # Load environment variables
 load_dotenv()
@@ -77,6 +97,7 @@ class SharePointAutomation:
         
         # Get items from SharePoint list
         url = f"https://graph.microsoft.com/v1.0/sites/{SITE_ID}/lists/{LIST_ID}/items"
+        logging.info(f"Checking for new documents in SharePoint site ID: {SITE_ID} and list ID: {LIST_ID}")
         params = {
             "$expand": "fields",
             "$filter": f"fields/Modified ge '{cutoff_time}'",
@@ -144,10 +165,31 @@ class SharePointAutomation:
             
             print(f"📄 Extracted {len(text)} characters")
             
-            # Classify document
-            classification = classify_with_llm(text)
-            doc_type = classification.get('document_type', 'Unknown')
-            doc_category = classification.get('document_category', 'General')
+            # Classify document using available endpoints
+            try:
+                # Try enhanced classification first
+                classification_response = requests.post(
+                    'http://localhost:8000/classify-enhanced',
+                    json={'text': text, 'filename': filename},
+                    timeout=30
+                )
+                
+                if classification_response.status_code == 200:
+                    classification = classification_response.json()
+                    doc_type = classification.get('doc_type', 'Unknown')
+                    doc_category = classification.get('doc_category', 'General')
+                    confidence = classification.get('confidence', 'Low')
+                    logging.info(f"Enhanced classification successful: {doc_type} | {doc_category} | Confidence: {confidence}")
+                
+                # If enhanced classification fails, use simple rules-based classification
+                else:
+                    logging.warning(f"Enhanced classification failed ({classification_response.status_code}), using rules-based classification...")
+                    doc_type, doc_category = self._classify_with_rules(text, filename)
+                    logging.info(f"Rules-based classification: {doc_type} | {doc_category}")
+                    
+            except Exception as e:
+                logging.error(f"Classification error: {e}")
+                doc_type, doc_category = self._classify_with_rules(text, filename)
             
             print(f"🏷️  Classification: {doc_type} | {doc_category}")
             
@@ -213,6 +255,12 @@ class SharePointAutomation:
         
         while True:
             try:
+                # Check services are running before processing
+                if not self.check_services():
+                    logging.error("Required services not available. Waiting 60 seconds...")
+                    time.sleep(60)
+                    continue
+                
                 self.run_automation_cycle()
                 print(f"⏰ Sleeping for {POLL_INTERVAL} seconds...")
                 time.sleep(POLL_INTERVAL)
@@ -221,9 +269,80 @@ class SharePointAutomation:
                 print("\n🛑 Stopping automation...")
                 break
             except Exception as e:
+                logging.error(f"❌ Unexpected error: {e}")
                 print(f"❌ Unexpected error: {e}")
                 print("🔄 Continuing after 60 seconds...")
                 time.sleep(60)
+    
+    def check_services(self):
+        """Check if required services are running"""
+        services = {
+            'FastAPI': 'http://localhost:8000/enhanced-status',
+            'Qdrant': 'http://localhost:6333/collections'
+        }
+        
+        all_services_ok = True
+        for service_name, url in services.items():
+            try:
+                response = requests.get(url, timeout=5)
+                if response.status_code == 200:
+                    logging.info(f"✅ {service_name} service is running")
+                else:
+                    logging.warning(f"⚠️ {service_name} service returned {response.status_code}")
+                    all_services_ok = False
+            except Exception as e:
+                logging.error(f"❌ {service_name} service not available: {e}")
+                all_services_ok = False
+        
+        # Check Mistral AI optionally (not required for basic operation)
+        try:
+            response = requests.get('http://localhost:8001/health', timeout=2)
+            if response.status_code == 200:
+                logging.info("✅ Mistral AI service is running (optional)")
+            else:
+                logging.info("⚠️ Mistral AI service not available (using fallback classification)")
+        except:
+            logging.info("⚠️ Mistral AI service not available (using fallback classification)")
+        
+        return all_services_ok
+    
+    def _classify_with_rules(self, text: str, filename: str) -> tuple:
+        """Simple rules-based classification as fallback"""
+        text_lower = text.lower()
+        filename_lower = filename.lower()
+        
+        # Immigration document patterns
+        immigration_keywords = ['uscis', 'green card', 'visa', 'immigration', 'naturalization', 
+                              'citizenship', 'petition', 'i-130', 'i-485', 'i-765', 'i-131',
+                              'birth certificate', 'marriage certificate', 'passport']
+        
+        # Criminal law patterns  
+        criminal_keywords = ['criminal', 'felony', 'misdemeanor', 'police', 'arrest', 'court',
+                           'plea', 'sentencing', 'conviction', 'probation']
+        
+        # Document type patterns
+        if any(keyword in text_lower or keyword in filename_lower for keyword in immigration_keywords):
+            if 'birth certificate' in text_lower or 'birth certificate' in filename_lower:
+                return 'Birth Certificate', 'Immigration - Family-Based'
+            elif 'marriage certificate' in text_lower or 'marriage' in filename_lower:
+                return 'Marriage Certificate', 'Immigration - Family-Based'
+            elif 'passport' in text_lower or 'passport' in filename_lower:
+                return 'Passport Copy', 'Immigration - USCIS Matters'
+            elif 'green card' in text_lower or 'greencard' in filename_lower:
+                return 'Green Card Copy', 'Immigration - Adjustment of Status'
+            else:
+                return 'Immigration Document', 'Immigration - USCIS Matters'
+        
+        elif any(keyword in text_lower or keyword in filename_lower for keyword in criminal_keywords):
+            if 'felony' in text_lower:
+                return 'Criminal Document', 'Criminal Defense - Felony'
+            elif 'misdemeanor' in text_lower:
+                return 'Criminal Document', 'Criminal Defense - Misdemeanor'
+            else:
+                return 'Criminal Document', 'Criminal Defense - Immigration Consequences'
+        
+        # Default classification
+        return 'Legal Document', 'Administrative'
 
 def main():
     """Main entry point"""

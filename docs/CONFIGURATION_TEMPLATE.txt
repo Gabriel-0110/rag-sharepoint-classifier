@@ -1,0 +1,31 @@
+
+# Configuration Template
+# Please fill in the following information:
+
+## SharePoint Configuration
+SHAREPOINT_SITE_URL=https://arandialaw.sharepoint.com/sites/[YOUR_SITE_NAME]
+SHAREPOINT_LIBRARY_NAME=[YOUR_DOCUMENT_LIBRARY_NAME]
+DOCUMENT_TYPE_COLUMN=[YOUR_DOCUMENT_TYPE_COLUMN_NAME]
+DOCUMENT_CATEGORY_COLUMN=[YOUR_CATEGORY_COLUMN_NAME]
+
+## Teams Configuration (Optional)
+ENABLE_TEAMS_NOTIFICATIONS=[true/false]
+NOTIFICATION_PREFERENCES=success,errors,low_confidence
+
+## Business Categories Review
+# Current categories: Corporate, Real Estate, Employment, IP, Litigation, 
+# Regulatory, Financial, Technology, Healthcare, Other
+# 
+# Do you need to add/modify categories for your practice?
+# Examples: Immigration, Family Law, Criminal Law, Tax Law, etc.
+
+CUSTOM_CATEGORIES=[LIST_ANY_ADDITIONAL_CATEGORIES]
+
+## Document Types Review  
+# Current types: Contract, Policy, Communication, Report, Legal Document,
+# Financial Document, Technical Document, Other
+#
+# Do you need specific legal document types?
+# Examples: Pleadings, Motions, Discovery, Briefs, etc.
+
+CUSTOM_DOCUMENT_TYPES=[LIST_ANY_ADDITIONAL_TYPES]

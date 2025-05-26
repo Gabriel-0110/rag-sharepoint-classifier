@@ -17,6 +17,21 @@ from src.classify_and_update import classify_and_update
 
 app = FastAPI(title="RAG Document Classification Service - Enhanced Edition")
 
+@app.get("/health")
+async def health_check():
+    """Health check endpoint for monitoring"""
+    return {
+        "status": "healthy",
+        "timestamp": time.time(),
+        "services": {
+            "enhanced_rag": ENHANCED_RAG_AVAILABLE,
+            "trocr": TROCR_AVAILABLE,
+            "confidence_scoring": CONFIDENCE_SCORING_AVAILABLE,
+            "few_shot": FEW_SHOT_AVAILABLE,
+            "teams": TEAMS_AVAILABLE
+        }
+    }
+
 # Try to import enhanced components
 ENHANCED_RAG_AVAILABLE = False
 TROCR_AVAILABLE = False

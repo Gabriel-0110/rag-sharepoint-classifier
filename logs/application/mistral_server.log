@@ -1,0 +1,295 @@
+/home/azureuser/rag_project/core/mistral_api_server.py:69: PydanticDeprecatedSince20: Pydantic V1 style `@validator` validators are deprecated. You should migrate to Pydantic V2 style `@field_validator` validators, see the migration guide for more details. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.11/migration/
+  @validator('role')
+INFO:     Started server process [37730]
+INFO:     Waiting for application startup.
+INFO:mistral_api_server:Loading model...
+INFO:accelerate.utils.modeling:We will use 90% of the memory on device 0 for storing the model, and 10% for the buffer to avoid OOM. You can set `max_memory` in to a higher value to use more memory (at your own risk).
+Loading checkpoint shards:   0%|          | 0/3 [00:00<?, ?it/s]Loading checkpoint shards:  33%|███▎      | 1/3 [00:01<00:02,  1.17s/it]Loading checkpoint shards:  67%|██████▋   | 2/3 [00:02<00:00,  1.00it/s]Loading checkpoint shards: 100%|██████████| 3/3 [00:02<00:00,  1.13it/s]Loading checkpoint shards: 100%|██████████| 3/3 [00:02<00:00,  1.07it/s]
+WARNING:accelerate.big_modeling:Some parameters are on the meta device because they were offloaded to the cpu.
+INFO:mistral_api_server:Model mistralai/Mistral-7B-Instruct-v0.3 loaded successfully
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://0.0.0.0:8001 (Press CTRL+C to quit)
+INFO:     127.0.0.1:38990 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49360 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33098 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33102 - "POST /classify HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:33110 - "POST /classify HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:48582 - "POST /classify HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:48598 - "POST /classify HTTP/1.1" 404 Not Found
+INFO:mistral_api_server:Request chatcmpl-d3d9a7511c72492baed0f6ac3355b43d: Processing prompt with 249 tokens
+ERROR:mistral_api_server:CUDA out of memory error
+INFO:     127.0.0.1:60016 - "POST /v1/chat/completions HTTP/1.1" 503 Service Unavailable
+INFO:     127.0.0.1:56744 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:41244 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:37878 - "POST /classify HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:37894 - "POST /classify HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:52836 - "POST /classify HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:52850 - "POST /classify HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:56796 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:41352 - "POST /classify HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:41356 - "POST /classify HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:59212 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52958 - "POST /classify HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:52974 - "POST /classify HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:50798 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:37486 - "POST /classify HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:37488 - "POST /classify HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:36120 - "POST /classify HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:36128 - "POST /classify HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:36134 - "POST /classify HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:36140 - "POST /classify HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:36152 - "POST /classify HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:36162 - "POST /classify HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:36164 - "POST /classify HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:36178 - "POST /classify HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:36180 - "POST /classify HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:36182 - "POST /classify HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:36188 - "POST /classify HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:36190 - "POST /classify HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:41722 - "POST /classify HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:41738 - "POST /classify HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:41752 - "POST /classify HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:41756 - "POST /classify HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:41768 - "POST /classify HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:41770 - "POST /classify HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:41774 - "POST /classify HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:41788 - "POST /classify HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:41796 - "POST /classify HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:41810 - "POST /classify HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:41816 - "POST /classify HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:41828 - "POST /classify HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:41840 - "POST /classify HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:41848 - "POST /classify HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:41856 - "POST /classify HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:41872 - "POST /classify HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:41878 - "POST /classify HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:41880 - "POST /classify HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:39836 - "POST /classify HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:39838 - "POST /classify HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:39846 - "POST /classify HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:39856 - "POST /classify HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:53368 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56184 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54796 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:34950 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:41616 - "POST /classify HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:41626 - "POST /classify HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:37460 - "POST /classify HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:37464 - "POST /classify HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:40814 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51452 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55520 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55528 - "POST /classify HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:55540 - "POST /classify HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:36232 - "POST /classify HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:36238 - "POST /classify HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:48092 - "POST /classify HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:48100 - "POST /classify HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:48110 - "POST /classify HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:48126 - "POST /classify HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:37188 - "POST /classify HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:37196 - "POST /classify HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:37198 - "POST /classify HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:37204 - "POST /classify HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:55242 - "POST /classify HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:55254 - "POST /classify HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:55266 - "POST /classify HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:55270 - "POST /classify HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:35630 - "POST /classify HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:35636 - "POST /classify HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:35642 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:35656 - "POST /classify HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:35672 - "POST /classify HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:50408 - "POST /classify HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:50420 - "POST /classify HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:50436 - "POST /classify HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:50444 - "POST /classify HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:54186 - "POST /classify HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:54202 - "POST /classify HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:33454 - "POST /classify HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:33462 - "POST /classify HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:33472 - "POST /classify HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:33484 - "POST /classify HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:58784 - "POST /classify HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:58792 - "POST /classify HTTP/1.1" 404 Not Found
+INFO:     Shutting down
+INFO:     Waiting for application shutdown.
+INFO:mistral_api_server:Shutting down and releasing resources...
+INFO:mistral_api_server:Resources released
+INFO:     Application shutdown complete.
+INFO:     Finished server process [37730]
+/home/azureuser/rag_project/core/mistral_api_server.py:69: PydanticDeprecatedSince20: Pydantic V1 style `@validator` validators are deprecated. You should migrate to Pydantic V2 style `@field_validator` validators, see the migration guide for more details. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.11/migration/
+  @validator('role')
+INFO:     Started server process [45807]
+INFO:     Waiting for application startup.
+INFO:mistral_api_server:Loading model...
+INFO:accelerate.utils.modeling:We will use 90% of the memory on device 0 for storing the model, and 10% for the buffer to avoid OOM. You can set `max_memory` in to a higher value to use more memory (at your own risk).
+Loading checkpoint shards:   0%|          | 0/3 [00:00<?, ?it/s]Loading checkpoint shards:  33%|███▎      | 1/3 [00:01<00:02,  1.11s/it]Loading checkpoint shards:  67%|██████▋   | 2/3 [00:01<00:00,  1.03it/s]Loading checkpoint shards: 100%|██████████| 3/3 [00:02<00:00,  1.15it/s]Loading checkpoint shards: 100%|██████████| 3/3 [00:02<00:00,  1.10it/s]
+WARNING:accelerate.big_modeling:Some parameters are on the meta device because they were offloaded to the cpu.
+INFO:mistral_api_server:Model mistralai/Mistral-7B-Instruct-v0.3 loaded successfully
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://0.0.0.0:8001 (Press CTRL+C to quit)
+INFO:     127.0.0.1:60444 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60450 - "POST /classify HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:60460 - "POST /classify HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:33138 - "POST /classify HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:33154 - "POST /classify HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:46702 - "POST /classify HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:46716 - "POST /classify HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:46718 - "POST /classify HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:46734 - "POST /classify HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:60046 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60048 - "POST /classify HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:60060 - "POST /classify HTTP/1.1" 404 Not Found
+INFO:     128.203.108.119:0 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60084 - "POST /classify HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:60096 - "POST /classify HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:50962 - "POST /classify HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:50976 - "POST /classify HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:50980 - "POST /classify HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:50994 - "POST /classify HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:57742 - "POST /classify HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:57750 - "POST /classify HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:57760 - "POST /classify HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:57776 - "POST /classify HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:51498 - "POST /classify HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:51514 - "POST /classify HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:51522 - "POST /classify HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:51538 - "POST /classify HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:60180 - "POST /classify HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:60184 - "POST /classify HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:40068 - "POST /classify HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:40082 - "POST /classify HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:40090 - "POST /classify HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:40092 - "POST /classify HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:41668 - "POST /classify HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:41682 - "POST /classify HTTP/1.1" 404 Not Found
+INFO:     128.203.108.119:0 - "GET /health HTTP/1.1" 200 OK
+INFO:     128.203.108.119:0 - "GET /health HTTP/1.1" 200 OK
+INFO:     162.84.222.45:0 - "GET / HTTP/1.1" 404 Not Found
+INFO:     162.84.222.45:0 - "GET /favicon.ico HTTP/1.1" 404 Not Found
+INFO:     128.203.108.119:0 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:45754 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56264 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:35016 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59600 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60110 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:36892 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50420 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:36882 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56096 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52522 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:36818 - "POST /classify HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:36832 - "POST /classify HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:36836 - "POST /classify HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:36844 - "POST /classify HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:40846 - "POST /classify HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:40858 - "POST /classify HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:48664 - "POST /classify HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:48668 - "POST /classify HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:48682 - "POST /classify HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:48694 - "POST /classify HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:33004 - "POST /classify HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:33010 - "POST /classify HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:33026 - "POST /classify HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:33030 - "POST /classify HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:35188 - "POST /classify HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:35202 - "POST /classify HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:35214 - "POST /classify HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:35216 - "POST /classify HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:54934 - "POST /classify HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:54950 - "POST /classify HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:54962 - "POST /classify HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:54964 - "POST /classify HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:38830 - "POST /classify HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:38832 - "POST /classify HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:38838 - "POST /classify HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:38844 - "POST /classify HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:46360 - "POST /classify HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:46370 - "POST /classify HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:46372 - "POST /classify HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:46384 - "POST /classify HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:51702 - "POST /classify HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:51712 - "POST /classify HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:51718 - "POST /classify HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:51732 - "POST /classify HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:54820 - "POST /classify HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:54830 - "POST /classify HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:54838 - "POST /classify HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:54848 - "POST /classify HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:35430 - "POST /classify HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:35446 - "POST /classify HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:41254 - "POST /classify HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:41256 - "POST /classify HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:60624 - "POST /classify HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:60636 - "POST /classify HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:42686 - "POST /classify HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:42696 - "POST /classify HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:54522 - "POST /classify HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:54528 - "POST /classify HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:57784 - "POST /classify HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:57796 - "POST /classify HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:50756 - "POST /classify HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:50764 - "POST /classify HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:50778 - "POST /classify HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:50782 - "POST /classify HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:39990 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:36536 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53540 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33174 - "POST /classify HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:39940 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:36586 - "POST /classify HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:40098 - "POST /classify HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:51926 - "POST /classify HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:51942 - "POST /classify HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:52960 - "POST /classify HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:52966 - "POST /classify HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:45546 - "POST /classify HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:45548 - "POST /classify HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:52676 - "POST /classify HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:52690 - "POST /classify HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:52696 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52704 - "POST /classify HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:52710 - "POST /classify HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:52724 - "POST /classify HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:52732 - "POST /classify HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:45164 - "POST /classify HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:45174 - "POST /classify HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:45184 - "POST /classify HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:45188 - "POST /classify HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:52322 - "POST /classify HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:52324 - "POST /classify HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:52334 - "POST /classify HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:52350 - "POST /classify HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:52366 - "POST /classify HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:52368 - "POST /classify HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:48480 - "POST /classify HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:48486 - "POST /classify HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:39694 - "POST /classify HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:39696 - "POST /classify HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:38926 - "POST /classify HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:38934 - "POST /classify HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:51448 - "POST /classify HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:51756 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:34724 - "POST /classify HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:34740 - "POST /classify HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:54256 - "POST /classify HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:54260 - "POST /classify HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:56440 - "POST /classify HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:56450 - "POST /classify HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:45102 - "POST /classify HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:45108 - "POST /classify HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:41470 - "POST /classify HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:49766 - "POST /classify HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:49396 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:38160 - "POST /classify HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:55854 - "POST /classify HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:44852 - "POST /classify HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:44858 - "POST /classify HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:59224 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:38554 - "POST /classify HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:38256 - "POST /classify HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:57216 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:48638 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40806 - "POST /classify HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:37760 - "POST /classify HTTP/1.1" 404 Not Found
