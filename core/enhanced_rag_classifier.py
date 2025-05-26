@@ -21,64 +21,42 @@ class EnhancedRAGClassifier:
         
         # SharePoint-Compatible Category Definitions for Immigration & Criminal Law
         self.category_definitions = {
-            # Immigration Categories
             "Asylum & Refugee": "Immigration cases of individuals seeking protection due to past persecution or fear of persecution (e.g. asylum applications, refugee status claims).",
             "Family-Sponsored Immigration": "Immigration cases based on family relationships (e.g. visa petitions for spouses, children, parents of U.S. citizens or residents).",
-            "Employment-Based Immigration": "Immigration cases based on employment, skills, or investment (e.g. work visas, employer-sponsored green cards).",
-            "Non-Immigrant Visas": "Cases involving temporary visas for tourism, study, work, etc. (non-permanent stays in the U.S.).",
             "Naturalization & Citizenship": "Cases about obtaining U.S. citizenship or proof of citizenship (e.g. naturalization applications, citizenship certificates).",
             "Removal & Deportation Defense": "Cases of individuals in deportation/removal proceedings, fighting to remain in the U.S. (immigration court defense).",
             "Immigration Detention & Bonds": "Matters involving ICE detention and bond hearings to secure release from immigration custody.",
             "Waivers of Inadmissibility": "Cases focused on waivers/exceptions that forgive immigration violations or criminal grounds to allow relief.",
             "Immigration Appeals & Motions": "Appeals or motions to reopen/reconsider in immigration matters (BIA appeals, motions to reopen cases, etc.).",
-            "Humanitarian Relief & Special Programs": "Immigration cases under humanitarian programs (e.g. VAWA, U visas, T visas, TPS, DACA, humanitarian parole, SIJS).",
+            "Humanitarian & Special Programs": "Immigration cases under humanitarian programs (e.g. VAWA, U visas, T visas, TPS, DACA, humanitarian parole, SIJS).",
             "ICE Enforcement & Compliance": "Issues related to ICE check-ins, orders of supervision, compliance with enforcement for individuals not detained.",
-            
-            # Criminal Law Categories
-            "Criminal Defense (Pretrial & Trial)": "Criminal cases defending individuals charged with crimes, from investigation through trial and verdict.",
+            "Criminal Defense": "Criminal cases defending individuals charged with crimes, from investigation through trial and verdict.",
             "Criminal Appeals": "Cases appealing criminal convictions or sentences to higher courts.",
             "Criminal Post-Conviction Relief": "Motions or petitions attacking a finalized criminal conviction/sentence (e.g. habeas corpus, motions to vacate).",
             "Parole & Probation Proceedings": "Matters involving parole board hearings for release from prison, or court hearings on probation violations.",
             "Investigations & Pre-Charge": "Legal assistance during investigations or before formal charges (fact-finding, interacting with law enforcement pre-indictment)."
         }
 
-        # SharePoint-Compatible Document Types for Immigration & Criminal Law
         self.document_types = {
-            # USCIS & Immigration Agency Documents
+            # Immigration Document Types
             "USCIS Receipt Notice": "USCIS notice confirming receipt of an application or petition (Form I-797C Notice of Action).",
             "USCIS Approval Notice": "USCIS notice indicating an application or petition was approved (often Form I-797 notice of action).",
             "USCIS Appointment Notice": "USCIS notice scheduling biometrics or an interview (contains date/time for fingerprinting or interview).",
             "USCIS Request for Evidence (RFE)": "USCIS letter requesting additional evidence for a pending application.",
             "USCIS Intent to Deny/Revoke": "USCIS notice of intent to deny an application or revoke a prior approval (often abbreviated NOID or NOIR).",
             "USCIS Denial Notice": "USCIS decision letter denying an application or petition.",
-            
-            # Immigration Court Documents
             "Notice to Appear (NTA)": "Charging document initiating immigration court removal proceedings (lists allegations and hearing info).",
             "Immigration Court Hearing Notice": "Notice of scheduled immigration court hearing (Master or Individual hearing date).",
             "Immigration Judge Decision/Order": "Written decision or order from an Immigration Judge (granting or denying relief, removal order, etc.).",
             "BIA/AAO Appeal Decision": "Decision from the Board of Immigration Appeals or USCIS Administrative Appeals Office on an appeal.",
-            
-            # ICE & Enforcement Documents
             "ICE Supervision Report Notice": "ICE Order of Supervision or notice to report for ICE check-ins (conditions for release from detention).",
-            
-            # Criminal Court Documents
-            "Parole Board Notice/Decision": "Correspondence scheduling a parole hearing or announcing a parole board's decision in a criminal case.",
-            "Criminal Complaint/Indictment": "Formal criminal charging document (complaint filed by prosecutor or indictment from a grand jury).",
-            "Plea Agreement": "Written agreement in a criminal case where defendant pleads guilty under agreed terms.",
-            "Court Order/Judgment": "Official court order or judgment (e.g. sentencing order, final judgment, court's written order on a motion).",
-            "Sentencing Memo": "Memorandum to the court arguing for a particular sentence (usually by defense, before sentencing in a criminal case).",
-            
-            # Legal Filings & Proceedings
+            "Parole Board Notice/Decision": "Correspondence scheduling a parole hearing or announcing a parole board's decision in a criminal or immigration case.",
             "Motion (Court Filing)": "A legal motion filed in court (requesting a court order on a specific issue).",
             "Legal Brief/Memorandum": "A document outlining legal arguments, filed in support of a motion or on appeal.",
             "Notice of Appeal": "Filing that initiates an appeal of a court or agency decision.",
             "Subpoena": "Legal document ordering someone to appear in court or produce evidence.",
             "Notice of Appearance": "Form or letter entering an attorney's appearance in a case (e.g. Form G-28 for immigration, attorney notice in court).",
-            
-            # Forms & Applications
             "Official Form/Application": "Completed official form for an application or petition (e.g. visa application form, immigration petition form).",
-            
-            # Evidence Documents
             "ID or Civil Document": "Personal identification or civil documents (passport, birth/marriage certificate, ID card) submitted as evidence.",
             "Financial Document": "Financial records (tax returns, pay stubs, bank statements, affidavits of support) submitted as evidence.",
             "Medical Record": "Medical reports or records submitted as evidence (doctor letters, hospital records, lab results).",
@@ -89,13 +67,9 @@ class EnhancedRAGClassifier:
             "Background Check/Rap Sheet": "Criminal history report (FBI or state rap sheet listing arrests/convictions).",
             "Photographs/Media": "Photographs or audio/video media files submitted as evidence.",
             "Communications Evidence": "Printouts of texts, emails, social media posts or similar communications used as evidence.",
-            
-            # Statements & Testimony
             "Support/Reference Letter": "Letter of support or character reference from a third party (not notarized, typically informal).",
             "Witness Affidavit/Declaration": "Sworn statement by a witness or third party (notarized affidavit or signed declaration under penalty of perjury).",
-            "Expert Report/Affidavit": "Report or affidavit by an expert (forensic analysis, medical expert, country expert) providing professional evidence.",
-            
-            # Case Preparation Documents
+            "Affidavit": "A sworn written statement made under oath or affirmation, used as evidence in court or agency proceedings.",
             "Bond Packet": "Compiled set of documents submitted for an immigration bond hearing (cover letter, exhibits like support letters, etc.).",
             "FOIA Request": "Letter or form requesting records under the Freedom of Information Act.",
             "FOIA Records Response": "Documents received from a FOIA request (agency's response and released records).",
@@ -104,17 +78,16 @@ class EnhancedRAGClassifier:
             "Client Timeline": "Chronology of events prepared for the case (attorney or client prepared timeline of facts).",
             "Interview/Meeting Notes": "Attorney's notes from client interviews, witness interviews, or meetings.",
             "Evidence Index": "List or index of exhibits/evidence prepared for the case.",
-            
-            # Draft & Working Documents
             "Draft (Unfiled) Document": "Draft version of a legal document (e.g. draft affidavit, draft motion) not yet signed or filed.",
-            "Unsigned Declaration (Draft)": "An unsigned sworn statement prepared for someone to sign (e.g. draft client declaration awaiting signature).",
-            
-            # Communications
+            "Unsigned Declaration": "An unsigned sworn statement prepared for someone to sign (e.g. draft client declaration awaiting signature).",
             "Attorney-Client Correspondence": "Letters or emails between the lawyer and client regarding the case.",
             "General Correspondence": "Other case-related correspondence (letters to/from agencies, opposing counsel, cover letters, etc.).",
-            
-            # Reference Materials
-            "Misc. Reference Material": "Any other documents in the file for reference (e.g. copies of laws, practice advisories, articles in the file)."
+            "Misc. Reference Material": "Any other documents in the file for reference (e.g. copies of laws, practice advisories, articles in the file).",
+            # Criminal Document Types
+            "Criminal Complaint/Indictment": "Formal criminal charging document (complaint filed by prosecutor or indictment from a grand jury).",
+            "Plea Agreement": "Written agreement in a criminal case where defendant pleads guilty under agreed terms.",
+            "Court Order/Judgment": "Official court order or judgment (e.g. sentencing order, final judgment, court's written order on a motion).",
+            "Sentencing Memo": "Memorandum to the court arguing for a particular sentence (usually by defense, before sentencing in a criminal case)."
         }
 
         self._setup_category_collection()

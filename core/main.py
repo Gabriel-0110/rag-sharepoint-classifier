@@ -40,7 +40,7 @@ FEW_SHOT_AVAILABLE = False
 TEAMS_AVAILABLE = False
 
 try:
-    from enhanced_rag_classifier import EnhancedRAGClassifier
+    from .enhanced_rag_classifier import EnhancedRAGClassifier
     enhanced_classifier = EnhancedRAGClassifier()
     ENHANCED_RAG_AVAILABLE = True
     print("✅ Enhanced RAG Classifier loaded successfully")
