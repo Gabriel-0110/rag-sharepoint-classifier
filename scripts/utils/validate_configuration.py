@@ -81,10 +81,28 @@ class ConfigurationValidator:
         if os.path.exists(classifier_file):
             with open(classifier_file, 'r') as f:
                 content = f.read()
-                if '"Immigration - Family-Based"' in content and '"Criminal Defense - Felony"' in content:
-                    self.success_items.append("✅ Business categories: Arandia Law Firm specialized categories configured")
+                # Check for specialized legal categories
+                legal_categories = [
+                    "Family-Sponsored Immigration",
+                    "Asylum & Refugee", 
+                    "Employment-Based Immigration",
+                    "Criminal Defense (Pretrial & Trial)",
+                    "Criminal Appeals",
+                    "Waivers of Inadmissibility",
+                    "Humanitarian & Special Programs"
+                ]
+                
+                found_categories = []
+                for category in legal_categories:
+                    if f'"{category}"' in content:
+                        found_categories.append(category)
+                
+                if len(found_categories) >= 5:  # Most specialized categories found
+                    self.success_items.append("✅ Business categories: Immigration & Criminal Law specialized categories configured")
+                elif len(found_categories) >= 2:
+                    self.success_items.append(f"✅ Business categories: {len(found_categories)} specialized legal categories found")
                 elif '"Corporate"' in content and '"Real Estate"' in content:
-                    self.warnings.append("⚠️ Business categories: Default categories (may need customization)")
+                    self.warnings.append("⚠️ Business categories: Default categories (may need customization for legal practice)")
                 else:
                     self.missing_items.append("❌ Business categories: Not found in classifier")
         else:
@@ -185,6 +203,7 @@ CUSTOM_DOCUMENT_TYPES=[LIST_ANY_ADDITIONAL_TYPES]
         
         # Calculate completion percentage
         total_items = len(self.success_items) + len(self.missing_items)
+        completion = 0
         if total_items > 0:
             completion = (len(self.success_items) / total_items) * 100
             print(f"\n📈 Configuration Completion: {completion:.1f}%")
@@ -195,7 +214,7 @@ CUSTOM_DOCUMENT_TYPES=[LIST_ANY_ADDITIONAL_TYPES]
             'success_count': len(self.success_items),
             'warning_count': len(self.warnings), 
             'missing_count': len(self.missing_items),
-            'completion_percentage': completion if total_items > 0 else 0
+            'completion_percentage': completion
         }
 
 if __name__ == "__main__":

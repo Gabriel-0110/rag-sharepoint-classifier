@@ -1,4 +1,4 @@
-# Python cache files
+# Python
 __pycache__/
 *.py[cod]
 *$py.class
@@ -16,13 +16,36 @@ parts/
 sdist/
 var/
 wheels/
-pip-wheel-metadata/
 share/python-wheels/
 *.egg-info/
 .installed.cfg
 *.egg
+MANIFEST
 
-# Environment variables
+# PyInstaller
+*.manifest
+*.spec
+
+# Installer logs
+pip-log.txt
+pip-delete-this-directory.txt
+
+# Unit test / coverage reports
+htmlcov/
+.tox/
+.nox/
+.coverage
+.coverage.*
+.cache
+nosetests.xml
+coverage.xml
+*.cover
+*.py,cover
+.hypothesis/
+.pytest_cache/
+cover/
+
+# Virtual environments
 .env
 .venv
 env/
@@ -31,75 +54,40 @@ ENV/
 env.bak/
 venv.bak/
 
-# Development and test files
-*test*.py
-test_*.py
-direct_classification_test.py
-simple_test.py
-verify_sharepoint_update.py
-organize_project.sh
-cleanup_project.sh
-
-# Logs
-*.log
-logs/
-
-# Vector database storage (keep structure but ignore data)
-storage/collections/*/segments/*/000*.log
-storage/collections/*/segments/*/MANIFEST-*
-storage/collections/*/segments/*/OPTIONS-*
-storage/collections/*/segments/*/payload_index/000*.log
-storage/collections/*/segments/*/payload_index/MANIFEST-*
-storage/collections/*/segments/*/payload_index/OPTIONS-*
-
-# Temporary files
-*.tmp
-*.temp
-temp/
-tmp/
-
-# IDE files
+# IDEs
 .vscode/
 .idea/
 *.swp
 *.swo
+*~
 
-# OS files
+# OS
 .DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
 Thumbs.db
 
-# Downloads
+# Project specific
+logs/*.log
+*.tmp
+*.temp
+test_output/
+test_results/
+archive/
+backup/
+snapshots/
 sp_batch_downloads/
-downloads/
+test_batch_downloads/
+*.log
+classification_log.csv
+classification_test_results.json
+basic_test_output.txt
+test_execution.log
 
-# Backup files
-*.bak
-*.backup
-
-# === PERMANENT EXCLUSIONS ===
-# Duplicate files (should only exist in core/ or enhanced/)
-/main.py
-/mistral_api_server.py
-/sharepoint_automation.py
-/enhanced_rag_classifier.py
-/confidence_scoring.py
-/few_shot_learning.py
-/teams_integration.py
-/trocr_integration.py
-
-# Test and development files
-test_*.py
-*_test.py
-direct_classification_test.py
-simple_test.py
-verify_sharepoint_update.py
-organize_project.sh
-cleanup_project.sh
-
-# Shell scripts moved to scripts/
-/start_mistral.sh
-/manage_automation.sh
-
-# Temporary cleanup scripts
-cleanup_and_organize.sh
-permanent_cleanup.sh
+# Data files (add specific patterns as needed)
+data/temp/
+storage/temp/
+processed_texts/*.txt

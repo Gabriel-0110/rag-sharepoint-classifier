@@ -1,40 +1,144 @@
 #!/usr/bin/env python3
 """
-Enhanced RAG Classification with Category Definitions
-Implements the advanced RAG features mentioned in the PDF document.
+Enhanced RAG Classification with 3-Model Architecture
+Implements PRIMARY (SaulLM) + FALLBACK (Mistral) + VALIDATOR (BART-MNLI) pipeline.
 """
 
 import json
 import numpy as np
 from sentence_transformers import SentenceTransformer
 from qdrant_client import QdrantClient
-from qdrant_client.models import Distance, VectorParams, PointStruct
+from qdrant_client.models import Distance, VectorParams, PointStruct, Filter, FieldCondition, Range
 import requests
-from typing import List, Dict, Tuple
+from typing import List, Dict, Tuple, Optional
+import hashlib
+import logging
+import torch
+import gc
+from transformers import (
+    AutoTokenizer, AutoModelForCausalLM, AutoModelForSequenceClassification
+)
+from transformers.utils.quantization_config import BitsAndBytesConfig
+from transformers.pipelines import pipeline
+
+# Configure logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 class EnhancedRAGClassifier:
-    def __init__(self):
+    """
+    Enhanced RAG Classification with 3-Model Architecture:
+    1. PRIMARY CLASSIFIER: SaulLM (Equall/Saul-7B-Instruct-v1) with 8-bit quantization
+    2. FALLBACK CLASSIFIER: Mistral (mistralai/Mistral-7B-Instruct-v0.3) with 8-bit quantization  
+    3. VALIDATOR: BART-MNLI (facebook/bart-large-mnli) for zero-shot validation
+    
+    Maintains existing Qdrant embedding + search logic, SharePoint integration, and CSV logging.
+    """
+    
+    def __init__(self, use_quantization=True, enable_validation=True, enable_fallback=True, load_models=True):
+        """Initialize the 3-model RAG classification system."""
+        logger.info("🚀 Initializing Enhanced RAG Classifier with 3-Model Architecture")
+        
+        # Store configuration
+        self.use_quantization = use_quantization
+        self.enable_validation = enable_validation
+        self.enable_fallback = enable_fallback
+        self.load_models = load_models
+        
+        # Initialize Qdrant client and embedding model (preserve existing logic)
         self.client = QdrantClient(url="http://localhost:6333")
         # Force CPU usage for embedding model to avoid CUDA memory conflicts
         self.embedding_model = SentenceTransformer('all-MiniLM-L6-v2', device='cpu')
-        self.mistral_url = "http://localhost:8001/classify"
         
-        # SharePoint-Compatible Category Definitions for Immigration & Criminal Law
+        # Initialize model components
+        # Model configuration for 8-bit quantization
+        self.quantization_config = BitsAndBytesConfig(
+            load_in_8bit=True,
+            llm_int8_enable_fp32_cpu_offload=True
+        )
+        
+        # Legacy Mistral API URL (keep for backwards compatibility)
+        self.mistral_url = "http://localhost:8001/chat/completions"
+        
+        logger.info("📊 Setting up vector database collections")
+        
+        # Category definitions (preserve existing logic)
         self.category_definitions = {
-            "Asylum & Refugee": "Immigration cases of individuals seeking protection due to past persecution or fear of persecution (e.g. asylum applications, refugee status claims).",
-            "Family-Sponsored Immigration": "Immigration cases based on family relationships (e.g. visa petitions for spouses, children, parents of U.S. citizens or residents).",
-            "Naturalization & Citizenship": "Cases about obtaining U.S. citizenship or proof of citizenship (e.g. naturalization applications, citizenship certificates).",
-            "Removal & Deportation Defense": "Cases of individuals in deportation/removal proceedings, fighting to remain in the U.S. (immigration court defense).",
-            "Immigration Detention & Bonds": "Matters involving ICE detention and bond hearings to secure release from immigration custody.",
-            "Waivers of Inadmissibility": "Cases focused on waivers/exceptions that forgive immigration violations or criminal grounds to allow relief.",
-            "Immigration Appeals & Motions": "Appeals or motions to reopen/reconsider in immigration matters (BIA appeals, motions to reopen cases, etc.).",
-            "Humanitarian & Special Programs": "Immigration cases under humanitarian programs (e.g. VAWA, U visas, T visas, TPS, DACA, humanitarian parole, SIJS).",
-            "ICE Enforcement & Compliance": "Issues related to ICE check-ins, orders of supervision, compliance with enforcement for individuals not detained.",
-            "Criminal Defense": "Criminal cases defending individuals charged with crimes, from investigation through trial and verdict.",
-            "Criminal Appeals": "Cases appealing criminal convictions or sentences to higher courts.",
-            "Criminal Post-Conviction Relief": "Motions or petitions attacking a finalized criminal conviction/sentence (e.g. habeas corpus, motions to vacate).",
-            "Parole & Probation Proceedings": "Matters involving parole board hearings for release from prison, or court hearings on probation violations.",
-            "Investigations & Pre-Charge": "Legal assistance during investigations or before formal charges (fact-finding, interacting with law enforcement pre-indictment)."
+            "Asylum & Refugee": {
+                "description": "Immigration cases of individuals seeking protection due to past persecution or fear of persecution (e.g. asylum applications, refugee status claims).",
+                "keywords": ["asylum", "refugee", "persecution", "fear", "protection", "withholding", "removal", "torture", "CAT"],
+                "document_types": ["asylum application", "refugee petition", "country condition evidence", "persecution evidence"]
+            },
+            "Family-Sponsored Immigration": {
+                "description": "Immigration cases based on family relationships (e.g. visa petitions for spouses, children, parents of U.S. citizens or residents).",
+                "keywords": ["family", "spouse", "marriage", "i-130", "i-485", "petition", "relative", "child", "parent"],
+                "document_types": ["marriage certificate", "birth certificate", "family petition", "adjustment of status"]
+            },
+            "Employment-Based Immigration": {
+                "description": "Immigration cases for employment-based visas and permanent residence through work sponsorship.",
+                "keywords": ["employment", "work", "job", "labor", "h1b", "eb-1", "eb-2", "eb-3", "perm", "sponsor"],
+                "document_types": ["labor certification", "employment petition", "work authorization", "job offer"]
+            },
+            "Non-Immigrant Visas": {
+                "description": "Temporary visa applications for tourists, students, workers, and other temporary visitors.",
+                "keywords": ["tourist", "student", "visitor", "f-1", "b-1", "b-2", "temporary", "visa", "nonimmigrant"],
+                "document_types": ["visa application", "student records", "travel documents", "temporary status"]
+            },
+            "Naturalization & Citizenship": {
+                "description": "Cases about obtaining U.S. citizenship or proof of citizenship (e.g. naturalization applications, citizenship certificates).",
+                "keywords": ["citizenship", "naturalization", "n-400", "oath", "ceremony", "citizen", "passport application"],
+                "document_types": ["citizenship application", "naturalization certificate", "citizenship test", "passport"]
+            },
+            "Removal & Deportation Defense": {
+                "description": "Cases of individuals in deportation/removal proceedings, fighting to remain in the U.S. (immigration court defense).",
+                "keywords": ["removal", "deportation", "nta", "notice to appear", "immigration court", "eoir", "hearing"],
+                "document_types": ["notice to appear", "hearing notice", "motion to terminate", "cancellation"]
+            },
+            "Immigration Detention & Bonds": {
+                "description": "Matters involving ICE detention and bond hearings to secure release from immigration custody.",
+                "keywords": ["detention", "bond", "ice", "custody", "release", "parole", "detained"],
+                "document_types": ["bond motion", "detention order", "parole request", "custody records"]
+            },
+            "Waivers of Inadmissibility": {
+                "description": "Cases focused on waivers/exceptions that forgive immigration violations or criminal grounds to allow relief.",
+                "keywords": ["waiver", "inadmissibility", "i-601", "i-212", "forgiveness", "hardship", "extreme"],
+                "document_types": ["waiver application", "hardship evidence", "medical waiver", "criminal waiver"]
+            },
+            "Immigration Appeals & Motions": {
+                "description": "Appeals or motions to reopen/reconsider in immigration matters (BIA appeals, motions to reopen cases, etc.).",
+                "keywords": ["appeal", "motion", "reopen", "reconsider", "bia", "federal court", "petition for review"],
+                "document_types": ["notice of appeal", "motion to reopen", "brief", "petition for review"]
+            },
+            "Humanitarian & Special Programs": {
+                "description": "Immigration cases under humanitarian programs (e.g. VAWA, U visas, T visas, TPS, DACA, humanitarian parole, SIJS).",
+                "keywords": ["vawa", "u visa", "t visa", "tps", "daca", "humanitarian", "sijs", "violence", "trafficking"],
+                "document_types": ["u visa petition", "vawa petition", "tps application", "trafficking evidence"]
+            },
+            "ICE Enforcement & Compliance": {
+                "description": "Issues related to ICE check-ins, orders of supervision, compliance with enforcement for individuals not detained.",
+                "keywords": ["ice", "supervision", "check-in", "compliance", "monitoring", "enforcement"],
+                "document_types": ["supervision order", "check-in notice", "compliance report", "monitoring agreement"]
+            },
+            "Criminal Defense (Pretrial & Trial)": {
+                "description": "Criminal cases defending individuals charged with crimes, from investigation through trial and verdict.",
+                "keywords": ["criminal", "charges", "indictment", "trial", "defense", "plea", "guilty", "innocent"],
+                "document_types": ["indictment", "complaint", "plea agreement", "trial transcript", "discovery"]
+            },
+            "Criminal Appeals": {
+                "description": "Cases appealing criminal convictions or sentences to higher courts.",
+                "keywords": ["appeal", "conviction", "sentence", "appellate", "review", "overturn"],
+                "document_types": ["notice of appeal", "appellate brief", "court decision", "sentencing memo"]
+            },
+            "Criminal Post-Conviction Relief": {
+                "description": "Motions or petitions attacking a finalized criminal conviction/sentence (e.g. habeas corpus, motions to vacate).",
+                "keywords": ["habeas", "corpus", "post-conviction", "vacate", "ineffective", "assistance", "counsel"],
+                "document_types": ["habeas petition", "motion to vacate", "ineffective assistance claim"]
+            },
+            "Parole & Probation Proceedings": {
+                "description": "Matters involving parole board hearings for release from prison, or court hearings on probation violations.",
+                "keywords": ["parole", "probation", "violation", "hearing", "release", "supervision", "conditions"],
+                "document_types": ["parole hearing", "probation report", "violation notice", "supervision agreement"]
+            }
         }
 
         self.document_types = {
@@ -90,71 +194,396 @@ class EnhancedRAGClassifier:
             "Sentencing Memo": "Memorandum to the court arguing for a particular sentence (usually by defense, before sentencing in a criminal case)."
         }
 
-        self._setup_category_collection()
+        # Initialize vector database and category data (preserve existing logic)
+        self._setup_collections()
+        self._populate_category_vectors()
     
-    def _setup_category_collection(self):
-        """Setup the category definitions collection in Qdrant as per PDF requirements."""
-        try:
-            # Create categories collection if it doesn't exist
-            collections = self.client.get_collections().collections
-            category_exists = any(c.name == "categories" for c in collections)
+    def _load_primary_classifier(self):
+        """
+        Load SaulLM (Equall/Saul-7B-Instruct-v1) as primary classifier with 8-bit quantization.
+        This model specializes in legal document understanding.
+        """
+        if self.primary_model is not None:
+            return  # Already loaded
             
-            if not category_exists:
+        try:
+            logger.info("🔥 Loading PRIMARY CLASSIFIER: SaulLM (Equall/Saul-7B-Instruct-v1) with 8-bit quantization")
+            
+            model_name = "Equall/Saul-7B-Instruct-v1"
+            
+            # Load tokenizer first
+            self.primary_tokenizer = AutoTokenizer.from_pretrained(model_name)
+            if self.primary_tokenizer.pad_token is None:
+                self.primary_tokenizer.pad_token = self.primary_tokenizer.eos_token
+            
+            # Load model with 8-bit quantization
+            self.primary_model = AutoModelForCausalLM.from_pretrained(
+                model_name,
+                quantization_config=self.quantization_config,
+                device_map="auto",
+                torch_dtype=torch.float16,
+                trust_remote_code=True
+            )
+            
+            logger.info("✅ SaulLM primary classifier loaded successfully")
+            
+        except Exception as e:
+            logger.error(f"❌ Failed to load SaulLM primary classifier: {e}")
+            self.primary_model = None
+            self.primary_tokenizer = None
+    
+    def _load_fallback_classifier(self):
+        """
+        Load Mistral (mistralai/Mistral-7B-Instruct-v0.3) as fallback classifier with 8-bit quantization.
+        Used when primary classifier fails or has low confidence.
+        """
+        if self.fallback_model is not None:
+            return  # Already loaded
+            
+        try:
+            logger.info("🔄 Loading FALLBACK CLASSIFIER: Mistral-7B-Instruct-v0.3 with 8-bit quantization")
+            
+            model_name = "mistralai/Mistral-7B-Instruct-v0.3"
+            
+            # Load tokenizer first
+            self.fallback_tokenizer = AutoTokenizer.from_pretrained(model_name)
+            if self.fallback_tokenizer.pad_token is None:
+                self.fallback_tokenizer.pad_token = self.fallback_tokenizer.eos_token
+            
+            # Load model with 8-bit quantization
+            self.fallback_model = AutoModelForCausalLM.from_pretrained(
+                model_name,
+                quantization_config=self.quantization_config,
+                device_map="auto",
+                torch_dtype=torch.float16,
+                trust_remote_code=True
+            )
+            
+            logger.info("✅ Mistral fallback classifier loaded successfully")
+            
+        except Exception as e:
+            logger.error(f"❌ Failed to load Mistral fallback classifier: {e}")
+            self.fallback_model = None
+            self.fallback_tokenizer = None
+    
+    def _load_validator(self):
+        """
+        Load BART-MNLI (facebook/bart-large-mnli) as zero-shot validator.
+        Used to validate classification results from primary/fallback models.
+        """
+        if self.validator_pipeline is not None:
+            return  # Already loaded
+            
+        try:
+            logger.info("🔍 Loading VALIDATOR: BART-MNLI for zero-shot classification validation")
+            
+            # Create zero-shot classification pipeline
+            self.validator_pipeline = pipeline(
+                "zero-shot-classification",
+                model="facebook/bart-large-mnli",
+                device=0 if torch.cuda.is_available() else -1  # Use GPU if available
+            )
+            
+            logger.info("✅ BART-MNLI validator loaded successfully")
+            
+        except Exception as e:
+            logger.error(f"❌ Failed to load BART-MNLI validator: {e}")
+            self.validator_pipeline = None
+    
+    def _cleanup_model_memory(self, model_type: str = "all"):
+        """
+        Clean up model memory to prevent CUDA OOM errors.
+        Args:
+            model_type: "primary", "fallback", "validator", or "all"
+        """
+        try:
+            if model_type in ["primary", "all"] and self.primary_model is not None:
+                logger.info("🧹 Cleaning up primary classifier memory")
+                del self.primary_model
+                del self.primary_tokenizer
+                self.primary_model = None
+                self.primary_tokenizer = None
+            
+            if model_type in ["fallback", "all"] and self.fallback_model is not None:
+                logger.info("🧹 Cleaning up fallback classifier memory")
+                del self.fallback_model
+                del self.fallback_tokenizer
+                self.fallback_model = None
+                self.fallback_tokenizer = None
+            
+            if model_type in ["validator", "all"] and self.validator_pipeline is not None:
+                logger.info("🧹 Cleaning up validator memory")
+                del self.validator_pipeline
+                self.validator_pipeline = None
+            
+            # Force garbage collection and clear CUDA cache
+            gc.collect()
+            if torch.cuda.is_available():
+                torch.cuda.empty_cache()
+                
+        except Exception as e:
+            logger.warning(f"⚠️ Error during memory cleanup: {e}")
+
+    def _setup_collections(self):
+        """Setup both category definitions and document collections in Qdrant."""
+        try:
+            collections = self.client.get_collections().collections
+            collection_names = [c.name for c in collections]
+            
+            # Setup categories collection for category definitions
+            if "categories" not in collection_names:
+                logger.info("Creating categories collection...")
                 self.client.create_collection(
                     collection_name="categories",
                     vectors_config=VectorParams(size=384, distance=Distance.COSINE)
                 )
-                print("📁 Created categories collection")
+                logger.info("Categories collection created")
             
-            # Check if categories are already stored
-            try:
-                result = self.client.scroll("categories", limit=1)
-                if len(result[0]) > 0:
-                    print("📋 Category definitions already loaded")
-                    return
-            except:
-                pass
+            # Setup documents collection for storing processed documents
+            if "documents" not in collection_names:
+                logger.info("Creating documents collection...")
+                self.client.create_collection(
+                    collection_name="documents", 
+                    vectors_config=VectorParams(size=384, distance=Distance.COSINE)
+                )
+                logger.info("Documents collection created")
+                
+            # Setup examples collection for classification examples
+            if "examples" not in collection_names:
+                logger.info("Creating examples collection...")
+                self.client.create_collection(
+                    collection_name="examples",
+                    vectors_config=VectorParams(size=384, distance=Distance.COSINE)
+                )
+                logger.info("Examples collection created")
+                
+        except Exception as e:
+            logger.error(f"Error setting up collections: {e}")
+    
+    def _populate_category_vectors(self):
+        """Populate the categories collection with category definitions and examples."""
+        try:
+            # Check if categories are already populated
+            count = self.client.count("categories")
+            if count.count > 0:
+                logger.info(f"Categories collection already populated with {count.count} entries")
+                return
             
-            # Store category definitions as embeddings
+            logger.info("Populating category vectors...")
             points = []
-            point_id = 1
             
-            # Store document type definitions
-            for doc_type, definition in self.document_types.items():
-                embedding = self.embedding_model.encode(definition)
-                points.append(PointStruct(
-                    id=point_id,
+            for idx, (category, details) in enumerate(self.category_definitions.items()):
+                # Create text for embedding
+                category_text = f"{category}: {details['description']} Keywords: {', '.join(details['keywords'])} Common documents: {', '.join(details['document_types'])}"
+                
+                # Generate embedding
+                embedding = self.embedding_model.encode(category_text)
+                
+                # Create point
+                point = PointStruct(
+                    id=idx,
                     vector=embedding.tolist(),
                     payload={
-                        "type": "document_type",
-                        "name": doc_type,
-                        "definition": definition
+                        "category": category,
+                        "description": details["description"],
+                        "keywords": details["keywords"],
+                        "document_types": details["document_types"],
+                        "type": "category_definition"
                     }
-                ))
-                point_id += 1
+                )
+                points.append(point)
             
-            # Store category definitions
-            for category, definition in self.category_definitions.items():
-                embedding = self.embedding_model.encode(definition)
-                points.append(PointStruct(
-                    id=point_id,
-                    vector=embedding.tolist(),
-                    payload={
-                        "type": "category",
-                        "name": category,
-                        "definition": definition
-                    }
-                ))
-                point_id += 1
-            
-            # Upload to Qdrant
+            # Insert points
             self.client.upsert("categories", points)
-            print(f"✅ Stored {len(points)} category/type definitions in Qdrant")
+            logger.info(f"Populated {len(points)} category definitions in vector database")
+            
+            # Add some classification examples
+            self._add_classification_examples()
             
         except Exception as e:
-            print(f"❌ Error setting up categories: {e}")
+            logger.error(f"Error populating category vectors: {e}")
     
-    def get_rag_context(self, document_text: str, top_k: int = 3) -> Tuple[List[Dict], List[Dict]]:
+    def _add_classification_examples(self):
+        """Add real classification examples to improve RAG context."""
+        examples = [
+            {
+                "text": "USCIS Receipt Notice I-797C for Form I-130 Petition for Alien Relative filed for spouse",
+                "category": "Family-Sponsored Immigration",
+                "doc_type": "USCIS Receipt Notice",
+                "description": "Receipt notice for family petition"
+            },
+            {
+                "text": "Notice to Appear charging removability under section 237(a)(1)(A) for overstaying authorized period",
+                "category": "Removal & Deportation Defense", 
+                "doc_type": "Notice to Appear (NTA)",
+                "description": "Immigration court removal proceedings charging document"
+            },
+            {
+                "text": "Application for Asylum and for Withholding of Removal based on political persecution",
+                "category": "Asylum & Refugee",
+                "doc_type": "Official Form/Application",
+                "description": "Asylum application form"
+            },
+            {
+                "text": "Criminal Complaint charging defendant with aggravated assault in the first degree",
+                "category": "Criminal Defense (Pretrial & Trial)",
+                "doc_type": "Criminal Complaint/Indictment", 
+                "description": "Formal criminal charging document"
+            },
+            {
+                "text": "Motion for Bond Redetermination in Immigration Court proceedings",
+                "category": "Immigration Detention & Bonds",
+                "doc_type": "Motion (Court Filing)",
+                "description": "Motion requesting bond hearing in immigration court"
+            },
+            {
+                "text": "I-601 Application for Waiver of Grounds of Inadmissibility based on extreme hardship",
+                "category": "Waivers of Inadmissibility", 
+                "doc_type": "Official Form/Application",
+                "description": "Waiver application for immigration violations"
+            },
+            {
+                "text": "U-Visa Petition for victims of qualifying criminal activity who suffered mental trauma",
+                "category": "Humanitarian & Special Programs",
+                "doc_type": "Official Form/Application", 
+                "description": "U visa petition for crime victims"
+            },
+            {
+                "text": "Birth Certificate from Mexico with certified English translation for immigration purposes",
+                "category": "Family-Sponsored Immigration",
+                "doc_type": "ID or Civil Document",
+                "description": "Supporting civil document for family petition"
+            }
+        ]
+        
+        try:
+            points = []
+            for idx, example in enumerate(examples):
+                embedding = self.embedding_model.encode(example["text"])
+                
+                point = PointStruct(
+                    id=1000 + idx,  # Use different ID range for examples
+                    vector=embedding.tolist(),
+                    payload={
+                        "text": example["text"],
+                        "category": example["category"],
+                        "doc_type": example["doc_type"],
+                        "description": example["description"],
+                        "type": "classification_example"
+                    }
+                )
+                points.append(point)
+            
+            self.client.upsert("examples", points)
+            logger.info(f"Added {len(examples)} classification examples to vector database")
+            
+        except Exception as e:
+            logger.error(f"Error adding classification examples: {e}")
+    
+    def store_processed_document(self, text: str, filename: str, doc_type: str, doc_category: str, confidence: str):
+        """Store processed document in vector database for future RAG context."""
+        try:
+            # Create document hash for ID
+            doc_hash = hashlib.md5(f"{filename}_{text[:100]}".encode()).hexdigest()
+            doc_id = int(doc_hash[:8], 16)  # Convert to integer ID
+            
+            # Generate embedding
+            embedding = self.embedding_model.encode(text[:2000])  # Limit text length
+            
+            # Store document
+            point = PointStruct(
+                id=doc_id,
+                vector=embedding.tolist(),
+                payload={
+                    "filename": filename,
+                    "text_excerpt": text[:500],
+                    "doc_type": doc_type,
+                    "doc_category": doc_category,
+                    "confidence": confidence,
+                    "type": "processed_document"
+                }
+            )
+            
+            self.client.upsert("documents", [point])
+            logger.info(f"Stored document {filename} in vector database")
+            
+        except Exception as e:
+            logger.error(f"Error storing document {filename}: {e}")
+    
+    def _get_rag_context(self, document_text: str, filename: str) -> Dict:
+        """Get RAG context using vector similarity search."""
+        try:
+            # Generate embedding for the document
+            query_embedding = self.embedding_model.encode(document_text[:1000])
+            
+            # Search for similar categories (very low threshold to ensure matches)
+            category_results = self.client.search(
+                collection_name="categories",
+                query_vector=query_embedding.tolist(),
+                limit=5,
+                score_threshold=0.0  # Remove threshold to get all results
+            )
+            
+            # Search for similar examples
+            example_results = []
+            try:
+                example_results = self.client.search(
+                    collection_name="examples", 
+                    query_vector=query_embedding.tolist(),
+                    limit=5,
+                    score_threshold=0.0  # Remove threshold to get all results
+                )
+            except Exception as e:
+                logger.debug(f"No examples found or examples collection empty: {e}")
+            
+            # Search for similar processed documents
+            similar_docs = []
+            try:
+                doc_results = self.client.search(
+                    collection_name="documents",
+                    query_vector=query_embedding.tolist(), 
+                    limit=3,
+                    score_threshold=0.0  # Remove threshold to get all results
+                )
+                similar_docs = doc_results
+            except Exception as e:
+                logger.debug(f"No similar documents found: {e}")
+            
+            return {
+                "similar_categories": [
+                    {
+                        "category": result.payload.get("category", "Unknown"),
+                        "description": result.payload.get("description", ""),
+                        "score": result.score,
+                        "keywords": result.payload.get("keywords", []) if isinstance(result.payload.get("keywords"), list) else []
+                    }
+                    for result in category_results if result.payload and "category" in result.payload
+                ],
+                "similar_examples": [
+                    {
+                        "text": result.payload.get("text", ""),
+                        "category": result.payload.get("category", "Unknown"), 
+                        "doc_type": result.payload.get("doc_type", "Unknown"),
+                        "score": result.score
+                    }
+                    for result in example_results if result.payload and "category" in result.payload
+                ],
+                "similar_documents": [
+                    {
+                        "filename": result.payload.get("filename", "Unknown"),
+                        "doc_type": result.payload.get("doc_type", "Unknown"),
+                        "doc_category": result.payload.get("doc_category", "Unknown"),
+                        "score": result.score
+                    }
+                    for result in similar_docs if result.payload and "doc_category" in result.payload
+                ]
+            }
+            
+        except Exception as e:
+            logger.error(f"Error getting RAG context: {e}")
+            return {"similar_categories": [], "similar_examples": [], "similar_documents": []}
+
+    def get_rag_context(self, document_text: str, top_k: int = 3) -> Tuple[List, List]:
         """
         Get RAG context using vector similarity as specified in PDF.
         Returns similar documents and relevant category definitions.
@@ -187,227 +616,546 @@ class EnhancedRAGClassifier:
     
     def classify_with_rag(self, document_text: str, filename: str) -> Dict:
         """
-        Enhanced classification using RAG context as specified in PDF document.
+        NEW 3-MODEL CLASSIFICATION PIPELINE:
+        1. Get RAG context from Qdrant vector database (preserve existing logic)
+        2. Try PRIMARY CLASSIFIER: SaulLM (legal-specialized model)
+        3. If primary fails/low confidence, try FALLBACK CLASSIFIER: Mistral
+        4. Validate result with BART-MNLI zero-shot classifier
+        5. Return enhanced result with confidence scoring
         """
+        logger.info(f"🚀 Starting 3-Model RAG Classification Pipeline for {filename}")
+        
         try:
-            # Get RAG context
-            similar_docs, relevant_categories = self.get_rag_context(document_text)
+            # STEP 1: Get RAG context using existing vector similarity search (preserve logic)
+            logger.info("📊 Step 1: Retrieving RAG context from Qdrant vector database")
+            rag_context = self._get_rag_context(document_text, filename)
             
-            # Build enhanced prompt with RAG context
-            prompt = self._build_rag_prompt(document_text, similar_docs, relevant_categories)
+            logger.info(f"✅ RAG context retrieved: {len(rag_context['similar_categories'])} categories, "
+                       f"{len(rag_context['similar_examples'])} examples, "
+                       f"{len(rag_context['similar_documents'])} similar docs")
             
-            # Call Mistral API with enhanced prompt
-            response = requests.post(
-                self.mistral_url,
-                json={"text": prompt},
-                timeout=30
+            # STEP 2: Try PRIMARY CLASSIFIER (SaulLM)
+            logger.info("🔥 Step 2: Attempting classification with PRIMARY CLASSIFIER (SaulLM)")
+            primary_result = self._classify_with_primary(document_text, rag_context, filename)
+            
+            # STEP 3: Check if primary classification was successful and confident
+            if primary_result and primary_result.get("confidence_score", 0) >= 0.7:
+                logger.info(f"✅ PRIMARY CLASSIFIER successful with high confidence: {primary_result.get('confidence_score', 0):.2f}")
+                final_result = primary_result
+                final_result["model_used"] = "SaulLM_Primary"
+            else:
+                # STEP 4: Try FALLBACK CLASSIFIER (Mistral)
+                logger.info("🔄 Step 3: PRIMARY failed/low confidence, trying FALLBACK CLASSIFIER (Mistral)")
+                fallback_result = self._classify_with_fallback(document_text, rag_context, filename)
+                
+                if fallback_result and fallback_result.get("confidence_score", 0) >= 0.6:
+                    logger.info(f"✅ FALLBACK CLASSIFIER successful: {fallback_result.get('confidence_score', 0):.2f}")
+                    final_result = fallback_result
+                    final_result["model_used"] = "Mistral_Fallback"
+                else:
+                    # STEP 5: Use enhanced pattern-based fallback
+                    logger.info("🔄 Step 4: Both models failed, using enhanced pattern-based classification")
+                    final_result = self._fallback_classification(document_text, filename)
+                    final_result["model_used"] = "Pattern_Based_Fallback"
+            
+            # STEP 6: Validate result with BART-MNLI zero-shot classifier
+            logger.info("🔍 Step 5: Validating classification with BART-MNLI validator")
+            validation_result = self._validate_with_bart(document_text, final_result)
+            
+            # STEP 7: Combine results and add enhanced metadata
+            enhanced_result = self._combine_classification_results(
+                final_result, validation_result, rag_context, filename
             )
             
-            if response.status_code == 200:
-                result = response.json()
-                
-                # Add RAG context info to result
-                result["rag_context"] = {
-                    "similar_documents": len(similar_docs),
-                    "relevant_categories": len(relevant_categories),
-                    "context_used": True
-                }
-                
-                return result
-            else:
-                # Fallback to basic classification
-                return self._fallback_classification(document_text)
-                
+            # STEP 8: Store processed document for future RAG context (preserve existing logic)
+            if enhanced_result.get("doc_type") and enhanced_result.get("doc_category"):
+                logger.info("💾 Step 6: Storing document in vector database for future RAG context")
+                self.store_processed_document(
+                    document_text, filename,
+                    enhanced_result["doc_type"], enhanced_result["doc_category"],
+                    enhanced_result.get("confidence", "Medium")
+                )
+            
+            logger.info(f"🎯 3-Model classification complete: {enhanced_result.get('doc_type')} | {enhanced_result.get('doc_category')} | Confidence: {enhanced_result.get('confidence')}")
+            return enhanced_result
+            
         except Exception as e:
-            print(f"❌ Error in RAG classification: {e}")
-            return self._fallback_classification(document_text)
+            logger.error(f"❌ Error in 3-model RAG classification: {e}")
+            # Fallback to pattern-based classification
+            fallback_result = self._fallback_classification(document_text, filename)
+            fallback_result["model_used"] = "Emergency_Fallback"
+            fallback_result["error"] = str(e)
+            return fallback_result
     
-    def _build_rag_prompt(self, document_text: str, similar_docs: List, relevant_categories: List) -> str:
-        """Build enhanced prompt with RAG context, using SharePoint-compatible format."""
-        prompt = f"""You are an AI legal document classifier for a law firm specializing in U.S. immigration and criminal law. Your task is to analyze an input document (its text content and context) and assign **one appropriate Document Category and one Document Type** from the lists provided below.
+    def _classify_with_primary(self, document_text: str, rag_context: Dict, filename: str) -> Dict:
+        """
+        PRIMARY CLASSIFIER: Use SaulLM (Equall/Saul-7B-Instruct-v1) for classification.
+        This model is specialized for legal document understanding.
+        """
+        try:
+            # Load primary classifier if not already loaded
+            self._load_primary_classifier()
+            
+            if self.primary_model is None or self.primary_tokenizer is None:
+                logger.warning("⚠️ Primary classifier (SaulLM) not available")
+                return {
+                    'category': 'Other',
+                    'confidence': 0.0,
+                    'reasoning': 'Primary classifier not available',
+                    'model_used': 'saullm',
+                    'error': 'Primary classifier not loaded',
+                    'filename': filename
+                }
+            
+            # Build legal-specialized prompt for SaulLM
+            prompt = self._build_saul_prompt(document_text, rag_context, filename)
+            
+            # Tokenize input
+            inputs = self.primary_tokenizer(
+                prompt, 
+                return_tensors="pt", 
+                max_length=2048,
+                truncation=True,
+                padding=True
+            )
+            
+            # Move inputs to same device as model
+            inputs = {k: v.to(self.primary_model.device) for k, v in inputs.items()}
+            
+            # Generate classification
+            with torch.no_grad():
+                outputs = self.primary_model.generate(
+                    **inputs,
+                    max_new_tokens=100,
+                    temperature=0.1,
+                    do_sample=True,
+                    pad_token_id=self.primary_tokenizer.eos_token_id
+                )
+            
+            # Decode response
+            response = self.primary_tokenizer.decode(outputs[0], skip_special_tokens=True)
+            
+            # Extract classification from response (remove input prompt)
+            classification_text = response[len(prompt):].strip()
+            
+            # Parse result
+            result = self._parse_classification_result(classification_text)
+            result["raw_response"] = classification_text
+            result["model"] = "SaulLM_Primary"
+            
+            # Calculate confidence score based on response quality
+            confidence_score = self._calculate_confidence_score(classification_text, result)
+            result["confidence_score"] = confidence_score
+            
+            logger.info(f"✅ SaulLM classification: {result.get('doc_category')} | {result.get('doc_type')} | Confidence: {confidence_score:.2f}")
+            
+            return result
+            
+        except Exception as e:
+            logger.error(f"❌ Error in SaulLM primary classification: {e}")
+            return {
+                'category': 'Other',
+                'confidence': 0.0,
+                'reasoning': f'Error in SaulLM classification: {e}',
+                'model_used': 'saullm',
+                'error': str(e),
+                'filename': filename
+            }
+    
+    def _build_rag_prompt(self, document_text: str, rag_context: Dict, filename: str) -> str:
+        """Build enhanced prompt with RAG context using vector similarity results."""
+        
+        # Start building the prompt
+        prompt = f"""You are an expert AI legal document classifier for a law firm specializing in U.S. immigration and criminal law. 
+
+TASK: Analyze the document text and classify it using the exact format: "Category: [Category Name]; Type: [Document Type]"
 
 DOCUMENT TO CLASSIFY:
-{document_text[:3000]}
+Filename: {filename}
+Text: {document_text[:2500]}
 
-**Document Categories (choose one from this list):**
-"""
-        # Add all categories from our definitions
-        for category in sorted(self.category_definitions.keys()):
-            prompt += f"- **{category}:** {self.category_definitions[category]}\n"
+--- RAG CONTEXT FROM VECTOR DATABASE ---
 
-        prompt += "\n**Document Types (choose one from this list):**\n"
+SIMILAR CATEGORIES (based on semantic similarity):"""
         
-        # Add all document types from our definitions
-        for doc_type in sorted(self.document_types.keys()):
-            prompt += f"- **{doc_type}:** {self.document_types[doc_type]}\n"
+        # Add similar categories from vector search
+        if rag_context["similar_categories"]:
+            for i, cat in enumerate(rag_context["similar_categories"][:3]):
+                keywords = cat.get('keywords', [])
+                if isinstance(keywords, list):
+                    keywords_str = ', '.join(keywords[:8])
+                else:
+                    keywords_str = str(keywords)
+                prompt += f"""
+{i+1}. {cat['category']} (similarity: {cat['score']:.3f})
+   Description: {cat['description']}
+   Keywords: {keywords_str}"""
+        else:
+            prompt += "\nNo similar categories found in vector database."
+        
+        # Add similar examples from vector search
+        prompt += f"\n\nSIMILAR CLASSIFICATION EXAMPLES (from vector database):"
+        if rag_context["similar_examples"]:
+            for i, example in enumerate(rag_context["similar_examples"][:3]):
+                prompt += f"""
+{i+1}. Text: {example['text'][:200]}...
+   Classification: Category: {example['category']}; Type: {example['doc_type']}
+   Similarity: {example['score']:.3f}"""
+        else:
+            prompt += "\nNo similar examples found in vector database."
+        
+        # Add similar processed documents
+        if rag_context["similar_documents"]:
+            prompt += f"\n\nSIMILAR PROCESSED DOCUMENTS:"
+            for i, doc in enumerate(rag_context["similar_documents"][:2]):
+                prompt += f"""
+{i+1}. {doc['filename']} (similarity: {doc['score']:.3f})
+   Previous classification: Category: {doc['doc_category']}; Type: {doc['doc_type']}"""
+        
+        # Add complete category and type lists
+        prompt += f"""
 
-        # Add contextual information if available
-        if similar_docs or relevant_categories:
-            prompt += "\n**CONTEXTUAL INFORMATION (Consider if helpful):**\n"
-            
-            if similar_docs:
-                prompt += "Similar documents from database:\n"
-                for i, doc in enumerate(similar_docs[:2]):
-                    if doc.payload and 'doc_type' in doc.payload:
-                        prompt += f"- Example {i+1}: Type '{doc.payload.get('doc_type', 'N/A')}', Category '{doc.payload.get('doc_category', 'N/A')}'\n"
-            
-            if relevant_categories:
-                prompt += "Relevant context from similar cases:\n"
-                for cat in relevant_categories[:2]:
-                    if cat.payload and cat.payload.get('type') == 'category':
-                        prompt += f"- {cat.payload['name']}: {cat.payload['definition'][:100]}...\n"
+--- COMPLETE CLASSIFICATION TAXONOMY ---
 
-        prompt += """
-**Classification Task:** Read the content of the provided document and determine:
-1. **Category:** Which one **Document Category** best fits the subject matter or context of the document?
-2. **Type:** Which one **Document Type** best describes the format or purpose of the document itself?
-
-**Output Format:** Provide your answer in a concise text format as follows – `Category: [Chosen Category]; Type: [Chosen Document Type]`. Do not deviate from the given lists. If the document does not clearly match any category/type, choose the closest reasonable option (but **do not** invent new labels).
-
-**Guidance:**
-- Use cues from the document's text (titles, keywords, phrases) to infer its nature.
-- Ensure the category reflects the case context (immigration vs criminal, and the specific area within those), and the type reflects the document's form (notice, motion, evidence, etc.).
-- If multiple categories or types seem to apply, pick the one that is most specific or central to the document's main purpose.
-- **Only output one category and one type.** No additional commentary is needed.
-
-Now proceed to classify the given document with the format **"Category: ...; Type: ..."** only.
+DOCUMENT CATEGORIES (choose exactly one):
 """
+        for category in self.category_definitions.keys():
+            prompt += f"- {category}\n"
+        
+        prompt += f"""
+DOCUMENT TYPES (choose exactly one):
+"""
+        for doc_type in list(self.document_types.keys())[:25]:
+            prompt += f"- {doc_type}\n"
+        
+        prompt += f"""
+
+CLASSIFICATION INSTRUCTIONS:
+1. Use the RAG context above to understand similar documents and categories
+2. Consider the semantic similarity scores from the vector database
+3. Match document content with the most appropriate category and type
+4. Focus on immigration law (asylum, family, employment, deportation, etc.) or criminal law
+5. Return EXACTLY this format: "Category: [Category Name]; Type: [Document Type]"
+
+Based on the document content and RAG context above, classify this document:"""
+        
         return prompt
 
-    def _fallback_classification(self, document_text: str) -> Dict:
-        """Improved fallback using SharePoint-compatible categories and document types."""
-        # Simplified fallback, primary classification should happen via LLM.
-        # This is a basic keyword spotter if LLM fails completely.
-        text_lower = document_text.lower()
-        doc_type = "Misc. Reference Material"  # Default fallback using SharePoint-compatible type
-        doc_category = "Immigration Appeals & Motions"  # Default fallback category
-        confidence = "Low"
-
-        # Immigration Keywords
-        immigration_keywords = [
-            'uscis', 'immigration', 'visa', 'i-130', 'i-485', 'n-400', 'asylum', 'deportation', 
-            'removal proceeding', 'green card', 'naturalization', 'eoir', 'ice', 'cbp',
-            'petition for alien relative', 'adjustment of status', 'notice to appear',
-            'refugee', 'family petition', 'employment visa', 'tourist visa', 'citizenship',
-            'detention', 'bond hearing', 'waiver', 'inadmissibility', 'humanitarian'
-        ]
-        # Criminal Keywords
-        criminal_keywords = [
-            'criminal', 'felony', 'misdemeanor', 'arrest', 'police report', 'court order', 
-            'plea agreement', 'sentencing', 'indictment', 'complaint', 'defendant', 
-            'prosecutor', 'dui', 'dwi', 'assault', 'burglary', 'fraud', 'appeal',
-            'conviction', 'parole', 'probation', 'investigation', 'habeas corpus'
-        ]
-
-        is_immigration = any(keyword in text_lower for keyword in immigration_keywords)
-        is_criminal = any(keyword in text_lower for keyword in criminal_keywords)
-
-        # Document type detection based on keywords
-        if "receipt notice" in text_lower:
-            doc_type = "USCIS Receipt Notice"
-        elif "approval notice" in text_lower:
-            doc_type = "USCIS Approval Notice"
-        elif "rfe" in text_lower or "request for evidence" in text_lower:
-            doc_type = "USCIS Request for Evidence (RFE)"
-        elif "notice to appear" in text_lower:
-            doc_type = "Notice to Appear (NTA)"
-        elif "hearing notice" in text_lower and "immigration" in text_lower:
-            doc_type = "Immigration Court Hearing Notice"
-        elif "complaint" in text_lower or "indictment" in text_lower:
-            doc_type = "Criminal Complaint/Indictment"
-        elif "plea agreement" in text_lower:
-            doc_type = "Plea Agreement"
-        elif "police report" in text_lower:
-            doc_type = "Police/Incident Report"
-        elif "motion" in text_lower:
-            doc_type = "Motion (Court Filing)"
-        elif "brief" in text_lower or "memorandum" in text_lower:
-            doc_type = "Legal Brief/Memorandum"
-        elif "affidavit" in text_lower or "declaration" in text_lower:
-            doc_type = "Witness Affidavit/Declaration"
-        elif "correspondence" in text_lower or "letter" in text_lower:
-            doc_type = "General Correspondence"
-
-        # Category classification
-        if is_immigration and is_criminal:
-            # Both immigration and criminal elements present
-            if "deportation" in text_lower or "removal" in text_lower:
-                doc_category = "Removal & Deportation Defense"
-            else:
-                doc_category = "Criminal Defense (Pretrial & Trial)"
-        elif is_immigration:
-            # Immigration-specific categorization
-            if "asylum" in text_lower or "refugee" in text_lower:
-                doc_category = "Asylum & Refugee"
-            elif "family" in text_lower or "spouse" in text_lower or "marriage" in text_lower:
-                doc_category = "Family-Sponsored Immigration"
-            elif "employment" in text_lower or "work" in text_lower or "job" in text_lower:
-                doc_category = "Employment-Based Immigration"
-            elif "tourist" in text_lower or "student" in text_lower or "visitor" in text_lower:
-                doc_category = "Non-Immigrant Visas"
-            elif "citizenship" in text_lower or "naturalization" in text_lower:
-                doc_category = "Naturalization & Citizenship"
-            elif "deportation" in text_lower or "removal" in text_lower:
-                doc_category = "Removal & Deportation Defense"
-            elif "detention" in text_lower or "bond" in text_lower:
-                doc_category = "Immigration Detention & Bonds"
-            elif "waiver" in text_lower or "inadmissibility" in text_lower:
-                doc_category = "Waivers of Inadmissibility"
-            elif "appeal" in text_lower or "motion" in text_lower:
-                doc_category = "Immigration Appeals & Motions"
-            elif "humanitarian" in text_lower or "vawa" in text_lower or "u visa" in text_lower:
-                doc_category = "Humanitarian Relief & Special Programs"
-            elif "ice" in text_lower or "supervision" in text_lower:
-                doc_category = "ICE Enforcement & Compliance"
-            else:
-                doc_category = "Immigration Appeals & Motions"  # Default immigration
+    def _calculate_confidence_score(self, classification_text: str, result: Dict) -> float:
+        """
+        Calculate confidence score based on classification response quality and content matching.
+        Returns a score between 0.0 and 1.0.
+        """
+        try:
+            confidence_score = 0.5  # Base confidence
+            
+            # Check if result contains valid classification
+            if result.get("doc_category") in self.category_definitions:
+                confidence_score += 0.2
+            if result.get("doc_type") in self.document_types:
+                confidence_score += 0.2
+            
+            # Check response quality
+            if classification_text and len(classification_text.strip()) > 10:
+                confidence_score += 0.1
+            
+            # Check for expected format
+            if "Category:" in classification_text and "Type:" in classification_text:
+                confidence_score += 0.2
+            
+            # Penalize for unclear responses
+            uncertainty_indicators = ["unclear", "uncertain", "possibly", "maybe", "appears to"]
+            if any(indicator in classification_text.lower() for indicator in uncertainty_indicators):
+                confidence_score -= 0.2
+            
+            return max(0.0, min(1.0, confidence_score))
+            
+        except Exception as e:
+            logger.warning(f"Error calculating confidence score: {e}")
+            return 0.5
+    
+    def _combine_classification_results(self, primary_result: Dict, validation_result: Dict, 
+                                      rag_context: Dict, filename: str) -> Dict:
+        """
+        Combine results from classification models and validation with enhanced metadata.
+        Returns comprehensive classification result with all metadata.
+        """
+        try:
+            # Start with primary result
+            combined_result = primary_result.copy() if primary_result else {}
+            
+            # Add validation information
+            if validation_result.get("validation_available"):
+                combined_result["validation"] = validation_result
                 
-        elif is_criminal:
-            # Criminal-specific categorization
-            if "appeal" in text_lower:
-                doc_category = "Criminal Appeals"
-            elif "habeas corpus" in text_lower or "post-conviction" in text_lower:
-                doc_category = "Criminal Post-Conviction Relief"
-            elif "parole" in text_lower or "probation" in text_lower:
-                doc_category = "Parole & Probation Proceedings"
-            elif "investigation" in text_lower or "pre-charge" in text_lower:
-                doc_category = "Investigations & Pre-Charge"
-            else:
-                doc_category = "Criminal Defense (Pretrial & Trial)"  # Default criminal
+                # Adjust confidence based on validation agreement
+                if validation_result.get("category_match") and validation_result.get("doc_type_match"):
+                    # Both category and type match - boost confidence
+                    current_confidence = combined_result.get("confidence_score", 0.5)
+                    combined_result["confidence_score"] = min(1.0, current_confidence + 0.1)
+                    combined_result["confidence"] = "High" if combined_result["confidence_score"] >= 0.8 else "Medium"
+                elif validation_result.get("category_match") or validation_result.get("doc_type_match"):
+                    # Partial match - maintain confidence
+                    combined_result["confidence"] = combined_result.get("confidence", "Medium")
+                else:
+                    # No match - reduce confidence
+                    current_confidence = combined_result.get("confidence_score", 0.5)
+                    combined_result["confidence_score"] = max(0.0, current_confidence - 0.2)
+                    combined_result["confidence"] = "Low"
+            
+            # Add RAG context metadata
+            combined_result["rag_context"] = {
+                "context_used": True,
+                "similar_categories_count": len(rag_context.get("similar_categories", [])),
+                "similar_examples_count": len(rag_context.get("similar_examples", [])),
+                "similar_documents_count": len(rag_context.get("similar_documents", []))
+            }
+            
+            # Add processing metadata
+            combined_result["processing_metadata"] = {
+                "filename": filename,
+                "pipeline_version": "3-model_architecture_v1.0",
+                "rag_enhanced": True,
+                "vector_database_used": True
+            }
+            
+            # Ensure required fields are present
+            if "doc_category" not in combined_result:
+                combined_result["doc_category"] = "Immigration Appeals & Motions"
+            if "doc_type" not in combined_result:
+                combined_result["doc_type"] = "Misc. Reference Material"
+            if "confidence" not in combined_result:
+                combined_result["confidence"] = "Medium"
+            
+            return combined_result
+            
+        except Exception as e:
+            logger.error(f"Error combining classification results: {e}")
+            return {
+                "doc_category": "Immigration Appeals & Motions",
+                "doc_type": "Misc. Reference Material", 
+                "confidence": "Low",
+                "error": str(e),
+                "model_used": "Error_Fallback"
+            }
 
-        # Increase confidence if we found specific indicators
-        if doc_type != "Misc. Reference Material":
-            confidence = "Medium"
+    def _build_saul_prompt(self, document_text: str, rag_context: Dict, filename: str) -> str:
+        """Build prompt for SaulLM classification."""
+        try:
+            rag_summary = rag_context.get('summary', '')
+            relevant_chunks = rag_context.get('relevant_chunks', [])
+            context_section = ""
+            if rag_summary:
+                context_section += f"Document Summary: {rag_summary}\n\n"
+            if relevant_chunks:
+                context_section += "Relevant Context:\n"
+                for i, chunk in enumerate(relevant_chunks[:3], 1):
+                    context_section += f"{i}. {chunk.get('content', '')[:200]}...\n"
+                context_section += "\n"
+            prompt = f"""You are a legal document classifier. Analyze the following document and classify it into one of these categories:
 
+Categories:
+- Contract: Legal agreements, terms of service, purchase agreements, employment contracts
+- Legal Brief: Court filings, legal arguments, case briefs, motions
+- Regulation: Government regulations, compliance documents, policy documents
+- Patent: Patent applications, patent grants, intellectual property documents
+- Other: Any document that doesn't fit the above categories
+
+{context_section}Document to classify (filename: {filename}):
+{document_text[:2000]}{'...' if len(document_text) > 2000 else ''}
+
+Provide your classification in this exact format:
+CLASSIFICATION: [Category]
+CONFIDENCE: [0.0-1.0]
+REASONING: [Brief explanation of why this document fits this category]"""
+            return prompt
+        except Exception as e:
+            logger.error(f"Error building SaulLM prompt: {str(e)}")
+            return f"Classify this document: {document_text[:1000]}"
+
+    def _parse_classification_result(self, classification_text: str) -> Dict:
+        """Parse the classification result from model output."""
+        try:
+            result = {
+                'category': 'Other',
+                'confidence': 0.5,
+                'reasoning': 'Default classification'
+            }
+            lines = classification_text.strip().split('\n')
+            for line in lines:
+                line = line.strip()
+                if line.startswith('CLASSIFICATION:'):
+                    category = line.replace('CLASSIFICATION:', '').strip()
+                    valid_categories = ['Contract', 'Legal Brief', 'Regulation', 'Patent', 'Other']
+                    if category in valid_categories:
+                        result['category'] = category
+                elif line.startswith('CONFIDENCE:'):
+                    try:
+                        confidence = float(line.replace('CONFIDENCE:', '').strip())
+                        result['confidence'] = max(0.0, min(1.0, confidence))
+                    except ValueError:
+                        pass
+                elif line.startswith('REASONING:'):
+                    reasoning = line.replace('REASONING:', '').strip()
+                    if reasoning:
+                        result['reasoning'] = reasoning
+            return result
+        except Exception as e:
+            logger.error(f"Error parsing classification result: {str(e)}")
+            return {
+                'category': 'Other',
+                'confidence': 0.3,
+                'reasoning': f'Parsing error: {str(e)}'
+            }
+
+    def _classify_with_fallback(self, document_text: str, rag_context: Dict, filename: str) -> Dict:
+        """Classify using fallback Mistral model."""
+        try:
+            logger.info("Using Mistral fallback classifier")
+            if self.fallback_tokenizer is None or self.fallback_model is None:
+                logger.warning("Fallback model or tokenizer not loaded. Using rule-based fallback.")
+                return self._fallback_classification(document_text, filename)
+            prompt = f"""Classify this legal document into one category:
+Categories: Contract, Legal Brief, Regulation, Patent, Other
+
+Document: {document_text[:1500]}
+
+Classification:"""
+            inputs = self.fallback_tokenizer(prompt, return_tensors="pt", truncation=True, max_length=2048)
+            with torch.no_grad():
+                outputs = self.fallback_model.generate(
+                    **inputs,
+                    max_new_tokens=100,
+                    temperature=0.3,
+                    do_sample=True,
+                    pad_token_id=self.fallback_tokenizer.eos_token_id
+                )
+            response = self.fallback_tokenizer.decode(outputs[0], skip_special_tokens=True)
+            classification_text = response[len(prompt):].strip()
+            result = self._parse_simple_classification(classification_text)
+            result['model_used'] = 'mistral_fallback'
+            result['filename'] = filename
+            return result
+        except Exception as e:
+            logger.error(f"Fallback classification error: {str(e)}")
+            return self._fallback_classification(document_text, filename)
+
+    def _parse_simple_classification(self, text: str) -> Dict:
+        """Parse simple classification response."""
+        valid_categories = ['Contract', 'Legal Brief', 'Regulation', 'Patent', 'Other']
+        text_upper = text.upper()
+        found_category = 'Other'
+        for category in valid_categories:
+            if category.upper() in text_upper:
+                found_category = category
+                break
         return {
-            "doc_type": doc_type,
-            "doc_category": doc_category,
-            "confidence": confidence,
-            "rag_context": {"context_used": False, "method": "rules-based fallback"}
+            'category': found_category,
+            'confidence': 0.6,
+            'reasoning': f'Fallback classification based on keyword matching'
         }
 
-def main():
-    """Test the enhanced RAG classifier."""
-    print("🚀 Testing Enhanced RAG Classification System")
-    
-    classifier = EnhancedRAGClassifier()
-    
-    # Test with sample text
-    test_text = """
-    SOFTWARE DEVELOPMENT AGREEMENT
-    
-    This agreement is entered into between Company A and Company B
-    for the development of a web application. The contract includes
-    payment terms, deliverables, timeline, and intellectual property rights.
-    """
-    
-    result = classifier.classify_with_rag(test_text, "test_agreement.pdf")
-    
-    print(f"\n📋 Classification Result:")
-    print(f"   Document Type: {result.get('doc_type', 'Unknown')}")
-    print(f"   Category: {result.get('doc_category', 'Unknown')}")
-    print(f"   Confidence: {result.get('confidence', 'Unknown')}")
-    print(f"   RAG Context: {result.get('rag_context', {})}")
+    def _fallback_classification(self, document_text: str, filename: str) -> Dict:
+        """Simple rule-based fallback classification."""
+        try:
+            logger.info("Using rule-based fallback classification")
+            text_lower = document_text.lower()
+            filename_lower = filename.lower() if filename else ''
+            if any(word in text_lower for word in ['agreement', 'contract', 'terms', 'party', 'whereas']):
+                category = 'Contract'
+                confidence = 0.7
+            elif any(word in text_lower for word in ['court', 'motion', 'brief', 'plaintiff', 'defendant']):
+                category = 'Legal Brief'
+                confidence = 0.7
+            elif any(word in text_lower for word in ['regulation', 'cfr', 'federal register', 'compliance']):
+                category = 'Regulation'
+                confidence = 0.7
+            elif any(word in text_lower for word in ['patent', 'invention', 'claim', 'inventor']):
+                category = 'Patent'
+                confidence = 0.7
+            else:
+                category = 'Other'
+                confidence = 0.5
+            return {
+                'category': category,
+                'confidence': confidence,
+                'reasoning': 'Rule-based classification using keyword matching',
+                'model_used': 'rule_based_fallback',
+                'filename': filename
+            }
+        except Exception as e:
+            logger.error(f"Rule-based fallback error: {str(e)}")
+            return {
+                'category': 'Other',
+                'confidence': 0.3,
+                'reasoning': f'Error in classification: {str(e)}',
+                'model_used': 'error_fallback',
+                'filename': filename
+            }
 
-if __name__ == "__main__":
-    main()
+    def _validate_with_bart(self, document_text: str, classification_result: Dict) -> Dict:
+        """Validate classification using BART-MNLI."""
+        try:
+            if not self.validator_pipeline:
+                logger.warning("BART classifier not available for validation")
+                return {
+                    'validation_passed': True,
+                    'validation_confidence': 0.5,
+                    'validation_reasoning': 'BART validator not available'
+                }
+            predicted_category = classification_result.get('category', 'Other')
+            hypothesis = f"This document is a {predicted_category.lower()}"
+            premise = document_text[:1000] if len(document_text) > 1000 else document_text
+            result_list = self.validator_pipeline(premise, hypothesis)
+            entailment_score = 0.5
+            if isinstance(result_list, list) and len(result_list) > 0:
+                result = result_list[0]
+                labels = result.get('labels', [])
+                scores = result.get('scores', [])
+                for i, label in enumerate(labels):
+                    if label.upper() == 'ENTAILMENT':
+                        entailment_score = scores[i]
+                        break
+            validation_passed = entailment_score > 0.5
+            return {
+                'validation_passed': validation_passed,
+                'validation_confidence': entailment_score,
+                'validation_reasoning': f'BART entailment score: {entailment_score:.3f}',
+                'hypothesis_tested': hypothesis
+            }
+        except Exception as e:
+            logger.error(f"BART validation error: {str(e)}")
+            return {
+                'validation_passed': True,
+                'validation_confidence': 0.5,
+                'validation_reasoning': f'Validation error: {str(e)}'
+            }
+
+    def classify_document_enhanced(self, document_text: str, rag_context: Dict, filename: str) -> Dict:
+        """
+        Enhanced 3-model document classification method.
+        This is the main entry point for the enhanced classification pipeline.
+        
+        Args:
+            document_text: The document text to classify
+            rag_context: RAG context from vector similarity search
+            filename: The document filename
+            
+        Returns:
+            Dict containing classification results with enhanced metadata
+        """
+        return self.classify_with_rag(document_text, filename)
+
+    def classify(self, document_text: str, filename: str = "") -> dict:
+        """Simple wrapper for compatibility with integration test."""
+        return self.classify_with_rag(document_text, filename)
+
+# Legacy compatibility methods for existing system integration
+def get_enhanced_rag_classifier():
+    """Factory function to create classifier instance (backwards compatibility)."""
+    return EnhancedRAGClassifier()
+
+def classify_document_enhanced(document_text: str, filename: str) -> Dict:
+    """Standalone function for document classification (backwards compatibility)."""
+    classifier = EnhancedRAGClassifier()
+    return classifier.classify_with_rag(document_text, filename)

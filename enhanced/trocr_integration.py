@@ -6,35 +6,62 @@ Implements transformer-based OCR as mentioned in PDF requirements for better acc
 
 import torch
 import os
-from transformers import TrOCRProcessor as HFTrOCRProcessor, VisionEncoderDecoderModel
-from PIL import Image
-import fitz  # PyMuPDF
-import io
+from typing import List, Optional, Any
 import logging
-from typing import List, Optional
+from PIL import Image
+import io
 
 logger = logging.getLogger(__name__)
 
-class TrOCRProcessor:
+# Handle imports with fallbacks
+try:
+    from transformers import TrOCRProcessor, VisionEncoderDecoderModel
+    TRANSFORMERS_AVAILABLE = True
+except ImportError:
+    TRANSFORMERS_AVAILABLE = False
+    TrOCRProcessor = None
+    VisionEncoderDecoderModel = None
+    logger.warning("Transformers library not available")
+
+try:
+    import fitz  # PyMuPDF
+    PYMUPDF_AVAILABLE = True
+except ImportError:
+    PYMUPDF_AVAILABLE = False
+    fitz = None
+    logger.warning("PyMuPDF not available")
+
+try:
+    import pytesseract
+    TESSERACT_AVAILABLE = True
+except ImportError:
+    TESSERACT_AVAILABLE = False
+    pytesseract = None
+    logger.warning("Tesseract not available")
+
+class EnhancedTrOCRProcessor:
     def __init__(self):
         # Force CPU usage to avoid GPU memory conflicts with Mistral model
         self.device = "cpu"
-        self.processor = None
-        self.model = None
+        self.processor: Any = None
+        self.model: Any = None
         self._initialize_model()
     
     def _initialize_model(self):
         """Initialize TrOCR model and processor."""
+        if not TRANSFORMERS_AVAILABLE or TrOCRProcessor is None or VisionEncoderDecoderModel is None:
+            logger.error("Transformers library not available for TrOCR")
+            return
+            
         try:
             logger.info("Initializing TrOCR model...")
-            self.processor = HFTrOCRProcessor.from_pretrained('microsoft/trocr-base-printed')
+            self.processor = TrOCRProcessor.from_pretrained('microsoft/trocr-base-printed')
             self.model = VisionEncoderDecoderModel.from_pretrained('microsoft/trocr-base-printed')
             
-            if self.device == "cuda":
+            # Move model to device
+            if hasattr(self.model, 'to'):
                 self.model = self.model.to(self.device)
-                logger.info("TrOCR model loaded on GPU")
-            else:
-                logger.info("TrOCR model loaded on CPU")
+            logger.info(f"TrOCR model loaded on {self.device}")
                 
         except Exception as e:
             logger.error(f"Failed to initialize TrOCR: {e}")
@@ -55,19 +82,27 @@ class TrOCRProcessor:
             if image.mode != 'RGB':
                 image = image.convert('RGB')
             
-            # Process image
-            pixel_values = self.processor(images=image, return_tensors="pt").pixel_values
+            # Process image with safe attribute access
+            if hasattr(self.processor, '__call__'):
+                pixel_values = self.processor(images=image, return_tensors="pt").pixel_values
+                if hasattr(pixel_values, 'to'):
+                    pixel_values = pixel_values.to(self.device)
+            else:
+                raise RuntimeError("Processor not callable")
             
-            if self.device == "cuda":
-                pixel_values = pixel_values.to(self.device)
-            
-            # Generate text
+            # Generate text with safe attribute access
             with torch.no_grad():
-                generated_ids = self.model.generate(pixel_values, max_length=512)
+                if hasattr(self.model, 'generate'):
+                    generated_ids = self.model.generate(pixel_values, max_length=512)
+                else:
+                    raise RuntimeError("Model generate method not available")
             
-            # Decode text
-            text = self.processor.batch_decode(generated_ids, skip_special_tokens=True)[0]
-            return text.strip()
+            # Decode text with safe attribute access
+            if hasattr(self.processor, 'batch_decode'):
+                text = self.processor.batch_decode(generated_ids, skip_special_tokens=True)[0]
+                return text.strip()
+            else:
+                raise RuntimeError("Processor batch_decode method not available")
             
         except Exception as e:
             logger.error(f"TrOCR text extraction failed: {e}")
@@ -78,6 +113,9 @@ class TrOCRProcessor:
         if not self.is_available():
             raise RuntimeError("TrOCR model not available")
         
+        if not PYMUPDF_AVAILABLE or fitz is None:
+            raise RuntimeError("PyMuPDF not available for PDF processing")
+        
         try:
             doc = fitz.open(pdf_path)
             all_text = []
@@ -85,20 +123,23 @@ class TrOCRProcessor:
             for page_num in range(len(doc)):
                 page = doc.load_page(page_num)
                 
-                # Render page as image
+                # Render page as image with safe attribute access
                 mat = fitz.Matrix(2.0, 2.0)  # 2x zoom for better OCR
-                pix = page.get_pixmap(matrix=mat)
-                img_data = pix.tobytes("png")
-                
-                # Convert to PIL Image
-                image = Image.open(io.BytesIO(img_data))
-                
-                # Extract text using TrOCR
-                page_text = self.extract_text_from_image(image)
-                if page_text:
-                    all_text.append(f"[Page {page_num + 1}]\n{page_text}")
-                
-                logger.info(f"Processed page {page_num + 1}/{len(doc)} with TrOCR")
+                if hasattr(page, 'get_pixmap'):
+                    pix = page.get_pixmap(matrix=mat)
+                    img_data = pix.tobytes("png")
+                    
+                    # Convert to PIL Image
+                    image = Image.open(io.BytesIO(img_data))
+                    
+                    # Extract text using TrOCR
+                    page_text = self.extract_text_from_image(image)
+                    if page_text:
+                        all_text.append(f"[Page {page_num + 1}]\n{page_text}")
+                    
+                    logger.info(f"Processed page {page_num + 1}/{len(doc)} with TrOCR")
+                else:
+                    logger.error(f"Cannot render page {page_num + 1} - get_pixmap not available")
             
             doc.close()
             return "\n\n".join(all_text)
@@ -114,7 +155,7 @@ class HybridOCRProcessor:
     """
     
     def __init__(self):
-        self.trocr = TrOCRProcessor()
+        self.trocr = EnhancedTrOCRProcessor()
         self.use_trocr = self.trocr.is_available()
         
         if self.use_trocr:
@@ -133,12 +174,17 @@ class HybridOCRProcessor:
         Returns:
             Extracted text
         """
+        if not PYMUPDF_AVAILABLE or fitz is None:
+            logger.error("PyMuPDF not available for PDF processing")
+            return ""
+            
         try:
             # First try extracting embedded text
             doc = fitz.open(pdf_path)
             embedded_text = ""
             for page in doc:
-                embedded_text += page.get_text()
+                if hasattr(page, 'get_text'):
+                    embedded_text += page.get_text()
             doc.close()
             
             # If we have substantial embedded text, use it
@@ -160,22 +206,33 @@ class HybridOCRProcessor:
     
     def _tesseract_pdf_ocr(self, pdf_path: str) -> str:
         """Fallback to Tesseract OCR."""
+        if not TESSERACT_AVAILABLE or pytesseract is None:
+            logger.error("Tesseract not available for OCR fallback")
+            return ""
+            
+        if not PYMUPDF_AVAILABLE or fitz is None:
+            logger.error("PyMuPDF not available for PDF processing")
+            return ""
+            
         try:
-            import pytesseract
             doc = fitz.open(pdf_path)
             all_text = []
             
             for page_num in range(len(doc)):
                 page = doc.load_page(page_num)
                 mat = fitz.Matrix(2.0, 2.0)
-                pix = page.get_pixmap(matrix=mat)
-                img_data = pix.tobytes("png")
                 
-                image = Image.open(io.BytesIO(img_data))
-                page_text = pytesseract.image_to_string(image)
-                
-                if page_text.strip():
-                    all_text.append(f"[Page {page_num + 1}]\n{page_text}")
+                if hasattr(page, 'get_pixmap'):
+                    pix = page.get_pixmap(matrix=mat)
+                    img_data = pix.tobytes("png")
+                    
+                    image = Image.open(io.BytesIO(img_data))
+                    page_text = pytesseract.image_to_string(image)
+                    
+                    if page_text.strip():
+                        all_text.append(f"[Page {page_num + 1}]\n{page_text}")
+                else:
+                    logger.error(f"Cannot render page {page_num + 1} for Tesseract OCR")
             
             doc.close()
             return "\n\n".join(all_text)
